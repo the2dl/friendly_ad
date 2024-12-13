@@ -108,6 +108,14 @@ function GroupMembersView({ groupName, users, onBack, onClose, onUserSelect }: G
   );
 }
 
+function cleanManagerName(managerDN: string): string {
+  return managerDN
+    .split(',')[0]
+    .replace('CN=', '')
+    .replace(/\\/g, '')
+    .trim();
+}
+
 export function UserDetails({ 
   user, 
   open, 
@@ -298,7 +306,7 @@ export function UserDetails({
               {user.manager && (
                 <div className="flex items-center space-x-2 text-sm">
                   <UserCircle className="h-4 w-4 text-muted-foreground" />
-                  <span>Manager: {user.manager.split(',')[0].replace('CN=', '')}</span>
+                  <span>Manager: {cleanManagerName(user.manager)}</span>
                 </div>
               )}
               <div className="flex items-center space-x-2 text-sm">
