@@ -10,9 +10,28 @@ class ApiError extends Error {
   }
 }
 
+// Add a helper to detect sAMAccountName format
+function isSAMAccountName(query: string): boolean {
+  // SAMAccountName typically follows domain\username or just username pattern
+  // and doesn't contain spaces or special characters
+  return /^[^@\s]+$/i.test(query);
+}
+
 export async function searchUsers(query: string, precise: boolean): Promise<User[]> {
   try {
-    const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}&type=users&precise=${precise}`);
+    // If it looks like a sAMAccountName, add it to the query params
+    const params = new URLSearchParams({
+      query: query,
+      type: 'users',
+      precise: precise.toString()
+    });
+
+    if (precise && isSAMAccountName(query)) {
+      params.set('searchBy', 'sAMAccountName');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/search?${params.toString()}`);
+    
     if (!response.ok) {
       throw new ApiError(response.status, 'Failed to fetch users');
     }

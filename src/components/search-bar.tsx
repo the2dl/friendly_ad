@@ -22,6 +22,10 @@ export function SearchBar({
   isPrecise,
   onPreciseChange 
 }: SearchBarProps) {
+  const isSAMAccountName = (query: string): boolean => {
+    return /^[^@\s]+$/i.test(query);
+  };
+
   return (
     <div className="relative w-full flex gap-2 items-center">
       <div className="relative flex-1">
@@ -29,7 +33,13 @@ export function SearchBar({
         <Input
           placeholder={placeholder}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => {
+            const newValue = e.target.value;
+            onChange(newValue);
+            if (isSAMAccountName(newValue) && !isPrecise) {
+              onPreciseChange(true);
+            }
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               onSearch();
@@ -39,16 +49,18 @@ export function SearchBar({
         />
       </div>
       <Toggle
-        pressed={isPrecise}
+        pressed={isPrecise || isSAMAccountName(value)}
         onPressedChange={onPreciseChange}
+        disabled={isSAMAccountName(value)}
         className={cn(
           "min-w-[100px]",
-          isPrecise 
+          (isPrecise || isSAMAccountName(value))
             ? "bg-primary text-primary-foreground hover:bg-primary/90"
-            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+            : "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+          isSAMAccountName(value) && "cursor-not-allowed opacity-50"
         )}
       >
-        {isPrecise ? "Precise" : "Broad"}
+        {isPrecise || isSAMAccountName(value) ? "Precise" : "Broad"}
       </Toggle>
     </div>
   );

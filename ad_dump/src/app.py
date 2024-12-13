@@ -146,7 +146,24 @@ def perform_search(search_query, search_type, is_precise):
         return {"error": "Could not connect to LDAP server"}, 500
 
     escaped_query = escape_ldap_filter(search_query)
+    search_by = request.args.get('searchBy', '')  # Get the new searchBy parameter
     
+    if search_type == 'users' and search_by == 'sAMAccountName':
+        # Optimized path for sAMAccountName
+        search_filter = f"(&(objectClass=user)(sAMAccountName={escaped_query}))"
+        attributes = ['name', 'mail', 'department', 'title', 'telephoneNumber', 
+                     'manager', 'streetAddress', 'l', 'st', 'postalCode', 'co', 
+                     'memberOf', 'whenCreated', 'whenChanged', 'sAMAccountName', 
+                     'userPrincipalName', 'userAccountControl', 'lastLogon', 
+                     'pwdLastSet', 'company', 'employeeID', 'employeeType']
+        
+        ldap_results = search_ldap(ldap_conn, search_filter, attributes)
+        if ldap_results:
+            valid_results = [entry for entry in ldap_results if entry[0] is not None]
+            results = [format_user(entry) for entry in valid_results if format_user(entry)]
+            close_ldap(ldap_conn)
+            return results
+
     results = []
     if search_type == 'users':
         if is_precise:
