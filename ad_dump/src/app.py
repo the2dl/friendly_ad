@@ -1,7 +1,5 @@
 from flask import Flask, request, jsonify, g
-from flask_caching import Cache
 from flask_cors import CORS
-from datetime import timedelta
 import ldap
 import os
 from dotenv import load_dotenv
@@ -22,23 +20,19 @@ CORS(app, resources={
     }
 })
 
-# Check for a NO_CACHE environment variable
-NO_CACHE = os.getenv("NO_CACHE", "False").lower() == "true"
-
-if NO_CACHE:
-    # Disable caching
-    cache = Cache(app, config={'CACHE_TYPE': 'null'})
-    print("Caching disabled")
-else:
-    # Use simple caching with a 24-hour timeout
-    cache = Cache(app, config={'CACHE_TYPE': 'simple', 'CACHE_DEFAULT_TIMEOUT': 86400})
-    print("Caching enabled")
-
 LDAP_SERVER = os.getenv("LDAP_SERVER")
 LDAP_USER = os.getenv("LDAP_USER")
 LDAP_PASSWORD = os.getenv("LDAP_PASSWORD")
 LDAP_BASE_DN = os.getenv("LDAP_BASE_DN")
 
+@app.route('/search', methods=['GET'])
+def search():
+    search_query = request.args.get('query', '')
+    search_type = request.args.get('type', '')
+    is_precise = request.args.get('precise', 'true').lower() == 'true'
+    
+    results = perform_search(search_query, search_type, is_precise)
+    return jsonify(results)
 
 def get_ldap_connection():
     try:
@@ -133,32 +127,6 @@ def search_ldap(ldap_conn, search_filter, attributes):
         print(f"LDAP Search Error: {e}")
         return None
 
-@app.route('/search', methods=['GET'])
-def search():
-    search_query = request.args.get('query', '')
-    search_type = request.args.get('type', '')
-    
-    if NO_CACHE:
-        print("Cache bypassed")
-        results = perform_search(search_query, search_type)
-        return jsonify(results)
-
-    cache_key = f"{search_type}:{search_query}"
-    cached_results = cache.get(cache_key)
-
-    if cached_results:
-        print("Cache hit")
-        return jsonify(cached_results)
-
-    results = perform_search(search_query, search_type)
-
-    if results:
-        cache.set(cache_key, results)
-        print("Cache miss, data cached")
-        return jsonify(results)
-    else:
-        return jsonify([]), 200
-
 def escape_ldap_filter(search_query):
     """Escape special characters for LDAP filter"""
     special_chars = {
@@ -172,24 +140,31 @@ def escape_ldap_filter(search_query):
     }
     return ''.join(special_chars.get(char, char) for char in search_query)
 
-def perform_search(search_query, search_type):
+def perform_search(search_query, search_type, is_precise):
     ldap_conn = get_ldap_connection()
     if not ldap_conn:
         return {"error": "Could not connect to LDAP server"}, 500
 
-    # Escape the search query
     escaped_query = escape_ldap_filter(search_query)
     
     results = []
     if search_type == 'users':
-        search_filter = f"(&(objectClass=user)(|(name=*{escaped_query}*)(mail=*{escaped_query}*)(sAMAccountName=*{escaped_query}*)))"
+        if is_precise:
+            search_filter = f"(&(objectClass=user)(sAMAccountName={escaped_query}))"
+        else:
+            search_filter = f"(&(objectClass=user)(|(name=*{escaped_query}*)(mail=*{escaped_query}*)(sAMAccountName=*{escaped_query}*)))"
+        
         attributes = ['name', 'mail', 'department', 'title', 'telephoneNumber', 
                      'manager', 'streetAddress', 'l', 'st', 'postalCode', 'co', 
                      'memberOf', 'whenCreated', 'whenChanged',
                      'sAMAccountName', 'userPrincipalName', 'userAccountControl',
                      'lastLogon', 'pwdLastSet', 'company', 'employeeID', 'employeeType']
     elif search_type == 'groups':
-        search_filter = f"(&(objectClass=group)(|(name=*{escaped_query}*)(description=*{escaped_query}*)))"
+        if is_precise:
+            search_filter = f"(&(objectClass=group)(sAMAccountName={escaped_query}))"
+        else:
+            search_filter = f"(&(objectClass=group)(|(name=*{escaped_query}*)(description=*{escaped_query}*)))"
+        
         attributes = ['name', 'description', 'groupType', 'member', 'managedBy', 'whenCreated', 'whenChanged']
     elif search_type == 'group_members':
         search_filter = f"(&(objectClass=user)(memberOf={escaped_query}))"

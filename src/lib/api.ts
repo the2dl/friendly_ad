@@ -3,16 +3,16 @@ import { Group } from '@/types/group';
 
 const API_BASE_URL = 'http://10.3.10.100:5001';
 
-export async function searchUsers(query: string): Promise<User[]> {
-  const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}&type=users`);
+export async function searchUsers(query: string, precise: boolean): Promise<User[]> {
+  const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}&type=users&precise=${precise}`);
   if (!response.ok) {
     throw new Error('Failed to fetch users');
   }
   return response.json();
 }
 
-export async function searchGroups(query: string): Promise<Group[]> {
-  const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}&type=groups`);
+export async function searchGroups(query: string, precise: boolean): Promise<Group[]> {
+  const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}&type=groups&precise=${precise}`);
   if (!response.ok) {
     throw new Error('Failed to fetch groups');
   }

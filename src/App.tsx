@@ -25,6 +25,8 @@ function App() {
     type: 'user' | 'group';
     item: User | Group;
   }>>([]);
+  const [isPrecise, setIsPrecise] = useState(true);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const handleSearch = async () => {
     if (!searchQuery) {
@@ -35,12 +37,14 @@ function App() {
 
     setIsLoading(true);
     setError(null);
+    setHasSearched(true);
+    
     try {
       if (activeTab === 'users') {
-        const data = await searchUsers(searchQuery);
+        const data = await searchUsers(searchQuery, isPrecise);
         setUsers(data);
       } else {
-        const data = await searchGroups(searchQuery);
+        const data = await searchGroups(searchQuery, isPrecise);
         console.log('Groups data:', data);
         setGroups(data);
       }
@@ -60,6 +64,7 @@ function App() {
     setUsers([]);
     setGroups([]);
     setSearchQuery('');
+    setHasSearched(false);
   }, [activeTab]);
 
   const handleUserSelect = (user: User) => {
@@ -145,6 +150,8 @@ function App() {
                       onSearch={handleSearch}
                       placeholder={`Search ${activeTab}...`}
                       className="flex-1 h-12 text-lg"
+                      isPrecise={isPrecise}
+                      onPreciseChange={setIsPrecise}
                     />
                     <Button 
                       onClick={handleSearch}
@@ -165,7 +172,16 @@ function App() {
                 </div>
 
                 <TabsContent value="users" className="mt-6">
-                  <UserGrid users={filteredUsers} onUserSelect={user => handleUserSelect(user)} />
+                  {users.length > 0 ? (
+                    <UserGrid users={filteredUsers} onUserSelect={user => handleUserSelect(user)} />
+                  ) : (
+                    hasSearched && searchQuery && !isLoading && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No users found{isPrecise ? " (using precise match)" : ""}.</p>
+                        <p className="text-sm mt-2">Try {isPrecise ? "switching to broad search" : "a different search term"}.</p>
+                      </div>
+                    )
+                  )}
                   <UserDetails 
                     user={selectedUser}
                     open={!!selectedUser && !selectedGroup}
@@ -219,7 +235,16 @@ function App() {
                 </TabsContent>
 
                 <TabsContent value="groups" className="mt-6">
-                  <GroupGrid groups={filteredGroups} onGroupSelect={setSelectedGroup} />
+                  {groups.length > 0 ? (
+                    <GroupGrid groups={filteredGroups} onGroupSelect={setSelectedGroup} />
+                  ) : (
+                    hasSearched && searchQuery && !isLoading && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No groups found{isPrecise ? " (using precise match)" : ""}.</p>
+                        <p className="text-sm mt-2">Try {isPrecise ? "switching to broad search" : "a different search term"}.</p>
+                      </div>
+                    )
+                  )}
                   <GroupDetails
                     group={selectedGroup}
                     open={!!selectedGroup}
