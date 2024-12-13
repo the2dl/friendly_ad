@@ -43,6 +43,10 @@ interface MembersViewProps {
 }
 
 function MembersView({ groupName, members, onBack, onClose, onUserSelect }: MembersViewProps) {
+  const handleMemberClick = (member: User) => {
+    onUserSelect(member);
+  };
+
   return (
     <DialogContent className="max-w-[800px] max-h-[80vh] overflow-y-auto">
       <DialogHeader className="space-y-4">
@@ -65,9 +69,14 @@ function MembersView({ groupName, members, onBack, onClose, onUserSelect }: Memb
           <div
             key={member.id}
             className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm hover:bg-secondary/80 cursor-pointer transition-colors"
-            onClick={() => onUserSelect(member)}
+            onClick={() => handleMemberClick(member)}
             role="button"
             tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                handleMemberClick(member);
+              }
+            }}
           >
             <div className="flex items-center space-x-3">
               <Avatar className="h-10 w-10">
@@ -133,6 +142,22 @@ export function GroupDetails({
     }
   }, [open, initialGroup?.id]);
 
+  const handleUserSelect = (user: User) => {
+    console.log('Handling user selection:', user.name);
+    if (onUserSelect) {
+      setShowMembers(false);
+      onClose();
+      setTimeout(() => {
+        onUserSelect(user);
+      }, 100);
+    }
+  };
+
+  const handleMemberClick = (member: User) => {
+    console.log('Member clicked:', member.name);
+    handleUserSelect(member);
+  };
+
   if (!group) return null;
 
   const renderBreadcrumbs = () => {
@@ -183,7 +208,7 @@ export function GroupDetails({
           members={members}
           onBack={() => setShowMembers(false)}
           onClose={onClose}
-          onUserSelect={onUserSelect}
+          onUserSelect={handleUserSelect}
         />
       </Dialog>
     );
@@ -254,11 +279,7 @@ export function GroupDetails({
                       <div
                         key={member.id}
                         className="flex items-center space-x-2 p-2 rounded-lg border bg-card hover:bg-secondary/80 cursor-pointer transition-colors"
-                        onClick={() => {
-                          if (onUserSelect) {
-                            onUserSelect(member);
-                          }
-                        }}
+                        onClick={() => handleMemberClick(member)}
                       >
                         <Avatar className="h-8 w-8">
                           <AvatarFallback>{member.name?.slice(0, 2).toUpperCase()}</AvatarFallback>

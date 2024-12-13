@@ -90,11 +90,23 @@ function App() {
   }, [activeTab]);
 
   const handleUserSelect = (user: User) => {
+    console.log('App: handling user selection:', user.name);
+    
+    // If we're coming from a group view, add it to the navigation stack
     if (selectedGroup) {
+      console.log('App: adding group to navigation stack:', selectedGroup.name);
       setNavigationStack(prev => [...prev, { type: 'group', item: selectedGroup }]);
     }
-    setSelectedUser(user);
+    
+    // Clear the group selection first
     setSelectedGroup(null);
+    
+    // Set the selected user after a small delay
+    setTimeout(() => {
+      console.log('App: setting selected user:', user.name);
+      setSelectedUser(user);
+      setActiveTab('users'); // Ensure we're on the users tab
+    }, 100);
   };
 
   const handleGroupSelect = (group: Group) => {
@@ -207,8 +219,9 @@ function App() {
                     )}
                     <UserDetails 
                       user={selectedUser}
-                      open={!!selectedUser && !selectedGroup}
+                      open={!!selectedUser}
                       onClose={() => {
+                        console.log('App: closing user details');
                         const previous = navigationStack[navigationStack.length - 1];
                         if (previous) {
                           setNavigationStack(prev => prev.slice(0, -1));
@@ -229,7 +242,10 @@ function App() {
                       }
                       setUsers={setUsers}
                       setSelectedUser={setSelectedUser}
-                      onReturnToGroup={(group) => handleGroupSelect(group)}
+                      onReturnToGroup={(group) => {
+                        setSelectedUser(null);
+                        setSelectedGroup(group);
+                      }}
                     />
                     <GroupDetails
                       group={selectedGroup}
@@ -254,6 +270,7 @@ function App() {
                         null
                       }
                       onUserSelect={handleUserSelect}
+                      userSource={userSource}
                     />
                   </TabsContent>
 
@@ -273,15 +290,7 @@ function App() {
                       open={!!selectedGroup}
                       onClose={() => setSelectedGroup(null)}
                       source={selectedUser ? { type: 'user', user: selectedUser } : null}
-                      onUserSelect={(user) => {
-                        setSelectedGroup((prevGroup) => {
-                          if (prevGroup) {
-                            setUserSource({ type: 'group', group: prevGroup });
-                          }
-                          return null;
-                        });
-                        setSelectedUser(user);
-                      }}
+                      onUserSelect={handleUserSelect}
                       userSource={userSource}
                     />
                   </TabsContent>
