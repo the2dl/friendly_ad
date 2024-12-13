@@ -123,13 +123,26 @@ def search_ldap(ldap_conn, search_filter, attributes):
         ldap_conn.set_option(ldap.OPT_REFERRALS, 0)
         ldap_conn.set_option(ldap.OPT_SIZELIMIT, 1000)
         results = ldap_conn.search_s(LDAP_BASE_DN, ldap.SCOPE_SUBTREE, search_filter, attributes)
-        return results
+        return {
+            "status": "success",
+            "results": results,
+            "truncated": False
+        }
     except ldap.SIZELIMIT_EXCEEDED as e:
         print(f"LDAP size limit exceeded: {e}")
-        return e.args[0].get('partial_results', [])
+        partial_results = e.args[0].get('partial_results', [])
+        return {
+            "status": "truncated",
+            "results": partial_results,
+            "truncated": True
+        }
     except ldap.LDAPError as e:
         print(f"LDAP Search Error: {e}")
-        return None
+        return {
+            "status": "error",
+            "results": None,
+            "error": str(e)
+        }
 
 def escape_ldap_filter(search_query):
     """Escape special characters for LDAP filter"""
@@ -147,7 +160,7 @@ def escape_ldap_filter(search_query):
 def perform_search(search_query, search_type, is_precise):
     ldap_conn = get_ldap_connection()
     if not ldap_conn:
-        return {"error": "Could not connect to LDAP server"}, 500
+        return {"error": "Could not connect to LDAP server", "truncated": False}, 500
 
     escaped_query = escape_ldap_filter(search_query)
     search_by = request.args.get('searchBy', '')  # Get the new searchBy parameter
@@ -161,12 +174,21 @@ def perform_search(search_query, search_type, is_precise):
                      'userPrincipalName', 'userAccountControl', 'lastLogon', 
                      'pwdLastSet', 'company', 'employeeID', 'employeeType']
         
-        ldap_results = search_ldap(ldap_conn, search_filter, attributes)
-        if ldap_results:
-            valid_results = [entry for entry in ldap_results if entry[0] is not None]
+        search_results = search_ldap(ldap_conn, search_filter, attributes)
+        close_ldap(ldap_conn)
+
+        if search_results["status"] == "error":
+            return {"error": "Search failed", "truncated": False}, 500
+
+        results = []
+        if search_results["results"]:
+            valid_results = [entry for entry in search_results["results"] if entry[0] is not None]
             results = [format_user(entry) for entry in valid_results if format_user(entry)]
-            close_ldap(ldap_conn)
-            return results
+
+        return {
+            "data": results,
+            "truncated": search_results["truncated"]
+        }
 
     results = []
     if search_type == 'users':
@@ -195,16 +217,24 @@ def perform_search(search_query, search_type, is_precise):
                      'sAMAccountName', 'userPrincipalName', 'userAccountControl',
                      'lastLogon', 'pwdLastSet', 'company', 'employeeID', 'employeeType']
 
-    ldap_results = search_ldap(ldap_conn, search_filter, attributes)
-    if ldap_results:
+    search_results = search_ldap(ldap_conn, search_filter, attributes)
+    close_ldap(ldap_conn)
+
+    if search_results["status"] == "error":
+        return {"error": "Search failed", "truncated": False}, 500
+
+    results = []
+    if search_results["results"]:
         if search_type in ['users', 'group_members']:
-            valid_results = [entry for entry in ldap_results if entry[0] is not None]
+            valid_results = [entry for entry in search_results["results"] if entry[0] is not None]
             results = [format_user(entry) for entry in valid_results if format_user(entry)]
         elif search_type == 'groups':
-            results = [format_group(entry) for entry in ldap_results if format_group(entry)]
+            results = [format_group(entry) for entry in search_results["results"] if format_group(entry)]
 
-    close_ldap(ldap_conn)
-    return results
+    return {
+        "data": results,
+        "truncated": search_results["truncated"]
+    }
 
 @app.teardown_appcontext
 def teardown_ldap(exception):
@@ -216,15 +246,14 @@ def get_group_details(group_id):
     if not ldap_conn:
         return {"error": "Could not connect to LDAP server"}, 500
 
-    # Search for the specific group by distinguishedName (which is the id)
     search_filter = f"(distinguishedName={escape_ldap_filter(group_id)})"
     attributes = ['name', 'description', 'groupType', 'member', 'managedBy', 'whenCreated', 'whenChanged']
     
     ldap_results = search_ldap(ldap_conn, search_filter, attributes)
     close_ldap(ldap_conn)
 
-    if ldap_results and len(ldap_results) > 0:
-        group = format_group(ldap_results[0])
+    if ldap_results["status"] == "success" and ldap_results["results"]:
+        group = format_group(ldap_results["results"][0])
         if group:
             return jsonify(group)
     

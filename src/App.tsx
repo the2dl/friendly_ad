@@ -45,10 +45,10 @@ function App() {
     try {
       if (activeTab === 'users') {
         const data = await searchUsers(searchQuery, isPrecise);
-        setUsers(data);
+        setUsers(data.data);
       } else {
         const data = await searchGroups(searchQuery, isPrecise);
-        setGroups(data);
+        setGroups(data.data);
       }
     } catch (err: unknown) {
       setError(`Failed to fetch ${activeTab}`);

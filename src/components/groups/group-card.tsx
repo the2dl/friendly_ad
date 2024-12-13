@@ -1,7 +1,7 @@
 import { Group } from '@/types/group';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { format } from 'date-fns';
-import { Users, Clock } from 'lucide-react';
+import { Users, Clock, Info, Shield, UserCog } from 'lucide-react';
 
 interface GroupCardProps {
   group: Group;
@@ -12,7 +12,6 @@ function parseADTimestamp(timestamp: string | null): Date | null {
   if (!timestamp) return null;
   
   try {
-    // Convert "yyyyMMddHHmmss.0Z" to "yyyy-MM-ddTHH:mm:ssZ"
     const formatted = timestamp
       .replace(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})\..*/, '$1-$2-$3T$4:$5:$6Z');
     return new Date(formatted);
@@ -28,40 +27,54 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
 
   return (
     <Card 
-      className="cursor-pointer hover:bg-secondary/80 transition-colors"
+      className="p-6 cursor-pointer hover:bg-accent/50 transition-colors"
       onClick={onClick}
     >
-      <CardContent className="pt-6">
-        <div className="space-y-4">
+      <div className="flex flex-col space-y-4">
+        <div className="flex items-start gap-6">
           <div>
-            <h3 className="font-medium">{group.name}</h3>
-            {group.description && (
-              <p className="text-sm text-muted-foreground">{group.description}</p>
-            )}
-          </div>
-
-          <div className="space-y-2 text-sm">
-            {group.memberCount !== undefined && (
-              <div className="flex items-center space-x-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span>{group.memberCount} members</span>
-              </div>
-            )}
-            {created && (
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>Created: {format(created, 'PPpp')}</span>
-              </div>
-            )}
-            {modified && (
-              <div className="flex items-center space-x-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>Modified: {format(modified, 'PPpp')}</span>
-              </div>
+            <div className="flex items-center space-x-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <h3 className="font-medium text-lg">{group.name}</h3>
+            </div>
+            {group.type && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {group.type.charAt(0).toUpperCase() + group.type.slice(1)} Group
+              </p>
             )}
           </div>
         </div>
-      </CardContent>
+
+        <div className="space-y-3">
+          {group.description && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Info className="mr-2 h-4 w-4" />
+              {group.description}
+            </div>
+          )}
+          
+          {group.members && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Users className="mr-2 h-4 w-4" />
+              {group.members.length} members
+            </div>
+          )}
+
+          {group.owner && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <UserCog className="mr-2 h-4 w-4" />
+              Owner: {group.owner}
+            </div>
+          )}
+
+          {created && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Clock className="mr-2 h-4 w-4" />
+              Created: {format(created, 'PPpp')}
+            </div>
+          )}
+        </div>
+      </div>
     </Card>
   );
 }

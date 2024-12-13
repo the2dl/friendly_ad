@@ -17,9 +17,13 @@ function isSAMAccountName(query: string): boolean {
   return /^[^@\s]+$/i.test(query);
 }
 
-export async function searchUsers(query: string, precise: boolean): Promise<User[]> {
+interface SearchResponse<T> {
+  data: T[];
+  truncated: boolean;
+}
+
+export async function searchUsers(query: string, precise: boolean): Promise<SearchResponse<User>> {
   try {
-    // If it looks like a sAMAccountName, add it to the query params
     const params = new URLSearchParams({
       query: query,
       type: 'users',
@@ -44,7 +48,7 @@ export async function searchUsers(query: string, precise: boolean): Promise<User
   }
 }
 
-export async function searchGroups(query: string, precise: boolean): Promise<Group[]> {
+export async function searchGroups(query: string, precise: boolean): Promise<SearchResponse<Group>> {
   const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}&type=groups&precise=${precise}`);
   if (!response.ok) {
     throw new Error('Failed to fetch groups');
@@ -52,7 +56,7 @@ export async function searchGroups(query: string, precise: boolean): Promise<Gro
   return response.json();
 }
 
-export async function searchGroupMembers(groupDN: string): Promise<User[]> {
+export async function searchGroupMembers(groupDN: string): Promise<SearchResponse<User>> {
   const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(groupDN)}&type=group_members`);
   if (!response.ok) {
     throw new Error('Failed to fetch group members');

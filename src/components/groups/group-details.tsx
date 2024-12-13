@@ -22,6 +22,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { getGroupDetails, searchGroupMembers } from '@/lib/api';
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface GroupDetailsProps {
   group: Group | null;
@@ -108,6 +109,7 @@ export function GroupDetails({
   const [group, setGroup] = useState<Group | null>(initialGroup);
   const [members, setMembers] = useState<User[]>([]);
   const [showMembers, setShowMembers] = useState(false);
+  const [isResultsTruncated, setIsResultsTruncated] = useState(false);
 
   useEffect(() => {
     setGroup(initialGroup);
@@ -121,9 +123,10 @@ export function GroupDetails({
           setGroup(data);
           return searchGroupMembers(data.id);
         })
-        .then(memberData => {
-          if (memberData) {
-            setMembers(memberData);
+        .then(response => {
+          if (response) {
+            setMembers(response.data || []);
+            setIsResultsTruncated(response.truncated || false);
           }
         })
         .catch(error => console.error('Failed to fetch group details:', error));
@@ -209,6 +212,15 @@ export function GroupDetails({
         </DialogHeader>
 
         <div className="mt-6 space-y-6">
+          {isResultsTruncated && (
+            <Alert>
+              <AlertDescription className="text-yellow-600">
+                Due to a large number of members, only the first 1,000 results are shown.
+                Please use more specific search criteria to narrow down the results.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Group Information</h4>
             <Separator />
