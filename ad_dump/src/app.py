@@ -121,8 +121,12 @@ def format_group(entry):
 def search_ldap(ldap_conn, search_filter, attributes):
     try:
         ldap_conn.set_option(ldap.OPT_REFERRALS, 0)
+        ldap_conn.set_option(ldap.OPT_SIZELIMIT, 1000)
         results = ldap_conn.search_s(LDAP_BASE_DN, ldap.SCOPE_SUBTREE, search_filter, attributes)
         return results
+    except ldap.SIZELIMIT_EXCEEDED as e:
+        print(f"LDAP size limit exceeded: {e}")
+        return e.args[0].get('partial_results', [])
     except ldap.LDAPError as e:
         print(f"LDAP Search Error: {e}")
         return None
