@@ -3,12 +3,26 @@ import { Group } from '@/types/group';
 
 const API_BASE_URL = 'http://10.3.10.100:5001';
 
-export async function searchUsers(query: string, precise: boolean): Promise<User[]> {
-  const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}&type=users&precise=${precise}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch users');
+class ApiError extends Error {
+  constructor(public status?: number, message?: string) {
+    super(message);
+    this.name = 'ApiError';
   }
-  return response.json();
+}
+
+export async function searchUsers(query: string, precise: boolean): Promise<User[]> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}&type=users&precise=${precise}`);
+    if (!response.ok) {
+      throw new ApiError(response.status, 'Failed to fetch users');
+    }
+    return response.json();
+  } catch (err) {
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      throw new ApiError(undefined, 'Connection failed');
+    }
+    throw err;
+  }
 }
 
 export async function searchGroups(query: string, precise: boolean): Promise<Group[]> {

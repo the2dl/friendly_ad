@@ -150,9 +150,9 @@ def perform_search(search_query, search_type, is_precise):
     results = []
     if search_type == 'users':
         if is_precise:
-            search_filter = f"(&(objectClass=user)(sAMAccountName={escaped_query}))"
+            search_filter = f"(&(objectClass=user)(|(sAMAccountName={escaped_query})(userPrincipalName={escaped_query})(employeeID={escaped_query})))"
         else:
-            search_filter = f"(&(objectClass=user)(|(name=*{escaped_query}*)(mail=*{escaped_query}*)(sAMAccountName=*{escaped_query}*)))"
+            search_filter = f"(&(objectClass=user)(|(name=*{escaped_query}*)(mail=*{escaped_query}*)(sAMAccountName=*{escaped_query}*)(userPrincipalName=*{escaped_query}*)(employeeID=*{escaped_query}*))"
         
         attributes = ['name', 'mail', 'department', 'title', 'telephoneNumber', 
                      'manager', 'streetAddress', 'l', 'st', 'postalCode', 'co', 

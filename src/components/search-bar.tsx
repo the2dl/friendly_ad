@@ -30,6 +30,11 @@ export function SearchBar({
           placeholder={placeholder}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              onSearch();
+            }
+          }}
           className={`w-full pl-14 pr-6 text-lg rounded-full ${className}`}
         />
       </div>
