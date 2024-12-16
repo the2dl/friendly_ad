@@ -54,18 +54,16 @@ export function SearchBar({
         />
       </div>
       <Toggle
-        pressed={isPrecise || isSAMAccountName(value)}
+        pressed={isPrecise}
         onPressedChange={onPreciseChange}
-        disabled={isSAMAccountName(value)}
         className={cn(
           "min-w-[100px]",
-          (isPrecise || isSAMAccountName(value))
+          isPrecise
             ? "bg-primary text-primary-foreground hover:bg-primary/90"
-            : "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-          isSAMAccountName(value) && "cursor-not-allowed opacity-50"
+            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
         )}
       >
-        {isPrecise || isSAMAccountName(value) ? "Precise" : "Broad"}
+        {isPrecise ? "Precise" : "Broad"}
       </Toggle>
     </div>
   );

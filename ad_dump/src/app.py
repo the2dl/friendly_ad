@@ -138,26 +138,42 @@ def format_user(entry):
 
 def format_group(entry):
     try:
-        # Convert group type to string
-        group_type = entry[1].get('groupType', [b'0'])[0]
+        # Convert entry[1] to dict if it's a list of tuples
+        attrs = {}
+        if isinstance(entry[1], list):
+            for attr in entry[1]:
+                if len(attr) >= 2:
+                    attrs[attr[0]] = attr[1]
+        else:
+            attrs = entry[1]
+
+        # Skip entries that don't have a name
+        if not attrs.get('name'):
+            return None
+
+        group_type = attrs.get('groupType', [b'0'])[0]
         if group_type:
             group_type = int(group_type.decode('utf-8'))
-            # -2147483646 is distribution, -2147483643 is security (you might need to adjust these values)
             type_str = 'security' if group_type == -2147483643 else 'distribution'
         else:
             type_str = 'unknown'
 
         formatted_entry = {
             "id": entry[0],
-            "name": entry[1].get('name', [None])[0].decode('utf-8') if entry[1].get('name', [None])[0] else None,
-            "description": entry[1].get('description', [None])[0].decode('utf-8') if entry[1].get('description', [None])[0] else None,
+            "name": attrs.get('name', [None])[0].decode('utf-8') if attrs.get('name', [None])[0] else None,
+            "description": attrs.get('description', [None])[0].decode('utf-8') if attrs.get('description', [None])[0] else None,
             "type": type_str,
-            "members": [member.decode('utf-8') for member in entry[1].get('member', [])],
-            "owner": entry[1].get('managedBy', [None])[0].decode('utf-8') if entry[1].get('managedBy', [None])[0] else None,
-            "created": entry[1].get('whenCreated', [None])[0].decode('utf-8') if entry[1].get('whenCreated', [None])[0] else None,
-            "lastModified": entry[1].get('whenChanged', [None])[0].decode('utf-8') if entry[1].get('whenChanged', [None])[0] else None,
+            "members": [member.decode('utf-8') for member in attrs.get('member', [])],
+            "owner": attrs.get('managedBy', [None])[0].decode('utf-8') if attrs.get('managedBy', [None])[0] else None,
+            "created": attrs.get('whenCreated', [None])[0].decode('utf-8') if attrs.get('whenCreated', [None])[0] else None,
+            "lastModified": attrs.get('whenChanged', [None])[0].decode('utf-8') if attrs.get('whenChanged', [None])[0] else None,
         }
-        return formatted_entry
+
+        # Only return groups that have at least a name
+        if formatted_entry["name"]:
+            return formatted_entry
+        return None
+
     except Exception as e:
         print(f"Error formatting group: {e}")
         return None
@@ -253,8 +269,8 @@ def perform_search(search_query, search_type, is_precise):
         if is_precise:
             search_filter = f"(&(objectClass=user)(|(sAMAccountName={escaped_query})(userPrincipalName={escaped_query})(employeeID={escaped_query})))"
         else:
-            search_filter = f"(&(objectClass=user)(|(name=*{escaped_query}*)(mail=*{escaped_query}*)(sAMAccountName=*{escaped_query}*)(userPrincipalName=*{escaped_query}*)(employeeID=*{escaped_query}*))"
-        
+            search_filter = f"(&(objectClass=user)(|(name=*{escaped_query}*)(mail=*{escaped_query}*)(sAMAccountName=*{escaped_query}*)(userPrincipalName=*{escaped_query}*)(employeeID=*{escaped_query}*)))"  # Added closing parenthesis
+
         attributes = ['name', 'mail', 'department', 'title', 'telephoneNumber', 
                      'manager', 'streetAddress', 'l', 'st', 'postalCode', 'co', 
                      'memberOf', 'whenCreated', 'whenChanged',
