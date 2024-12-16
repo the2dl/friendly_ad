@@ -190,7 +190,6 @@ def search_ldap(ldap_conn, search_filter, attributes, base_dn=None):
         ldap_conn.set_option(ldap.OPT_REFERRALS, 0)
         ldap_conn.set_option(ldap.OPT_SIZELIMIT, 1000)
         
-        # Use the provided base_dn instead of environment variable
         search_base = base_dn or LDAP_BASE_DN
         
         results = ldap_conn.search_s(search_base, ldap.SCOPE_SUBTREE, search_filter, attributes)
@@ -200,10 +199,13 @@ def search_ldap(ldap_conn, search_filter, attributes, base_dn=None):
             "truncated": False
         }
     except ldap.SIZELIMIT_EXCEEDED as e:
-        print(f"LDAP size limit exceeded: {e}")
-        partial_results = e.args[0].get('partial_results', [])
+        # Get the partial results from the exception
+        partial_results = e.args[0].get('partial_results', []) if e.args else []
+        if not partial_results and hasattr(e, 'partial'):
+            partial_results = e.partial  # Some LDAP implementations use this attribute
+        
         return {
-            "status": "truncated",
+            "status": "success",  # Changed from "truncated" to "success"
             "results": partial_results,
             "truncated": True
         }

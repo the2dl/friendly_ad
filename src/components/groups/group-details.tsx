@@ -142,7 +142,11 @@ export function GroupDetails({
             setIsResultsTruncated(response.truncated || false);
           }
         })
-        .catch(error => console.error('Failed to fetch group details:', error));
+        .catch(error => {
+          console.error('Failed to fetch group details:', error);
+          setMembers([]);
+          setIsResultsTruncated(false);
+        });
     }
   }, [open, initialGroup?.id]);
 
