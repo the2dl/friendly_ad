@@ -265,7 +265,7 @@ export function UserDetails({
                           className="cursor-pointer hover:bg-secondary/80 transition-colors"
                           onClick={() => {
                             const groupName = group.split(',')[0].replace('CN=', '');
-                            const groupObj = {
+                            const groupObj: Group = {
                               id: group,
                               name: groupName,
                               type: 'security',

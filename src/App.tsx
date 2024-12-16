@@ -393,6 +393,17 @@ function App() {
               </TabsContent>
             </Tabs>
 
+            {(users.length > 0 || groups.length > 0 || (hasSearched && searchQuery)) && (
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                  <div className="w-full border-t border-muted" />
+                </div>
+                <div className="relative flex justify-center">
+                  <span className="bg-background px-3 text-sm text-muted-foreground">Features & Insights</span>
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="p-6 rounded-xl border bg-card hover:shadow-lg transition-all">
                 <div className="p-3 bg-primary/10 rounded-lg w-fit mb-4">
