@@ -200,33 +200,53 @@ def search_ldap(ldap_conn, search_filter, attributes, base_dn=None):
         }
     except ldap.SIZELIMIT_EXCEEDED as e:
         try:
-            # First try to get results from the exception
+            # Try to get partial results from the exception
             partial_results = []
             
-            # Try different ways to get partial results
+            # Method 1: Try to get from e.partial
             if hasattr(e, 'partial'):
                 partial_results = e.partial
+            
+            # Method 2: Try to get from exception args
             elif e.args and isinstance(e.args[0], dict):
                 partial_results = e.args[0].get('partial_results', [])
+            
+            # Method 3: Try to get from exception message
             elif hasattr(e, 'message') and isinstance(e.message, dict):
                 partial_results = e.message.get('partial_results', [])
             
-            # If we still don't have results, try one more search with a smaller limit
+            # Method 4: If still no results, try one more direct search
             if not partial_results:
-                ldap_conn.set_option(ldap.OPT_SIZELIMIT, 1000)  # Reset to ensure clean state
-                partial_results = ldap_conn.search_s(
-                    search_base,
-                    ldap.SCOPE_SUBTREE,
-                    search_filter,
-                    attributes,
-                    sizelimit=1000
-                )
+                # Reset the connection options
+                ldap_conn.set_option(ldap.OPT_SIZELIMIT, 1000)
+                
+                # Try a direct search which will be limited by the server
+                try:
+                    partial_results = ldap_conn.search_s(
+                        search_base,
+                        ldap.SCOPE_SUBTREE,
+                        search_filter,
+                        attributes
+                    )
+                except ldap.SIZELIMIT_EXCEEDED as inner_e:
+                    # If we get another size limit exception, try to get its partial results
+                    if hasattr(inner_e, 'partial'):
+                        partial_results = inner_e.partial
             
-            return {
-                "status": "success",
-                "results": partial_results,
-                "truncated": True
-            }
+            if partial_results:
+                return {
+                    "status": "success",
+                    "results": partial_results,
+                    "truncated": True
+                }
+            else:
+                print("No partial results found in any method")
+                return {
+                    "status": "error",
+                    "results": [],
+                    "error": "No partial results available"
+                }
+                
         except Exception as inner_e:
             print(f"Error handling partial results: {inner_e}")
             return {
