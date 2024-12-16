@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { addDomain, getDomains, deleteDomain, NewDomain, Domain } from '@/lib/api';
+import { addDomain, getDomains, deleteDomain, NewDomain, Domain, updateDomain, getDomain } from '@/lib/api';
 import { Label } from "@/components/ui/label";
 import {
   Tooltip,
@@ -13,14 +13,28 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { HelpCircle, Trash2, Edit } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface DomainManagerProps {
   adminKey: string;
+  onDomainChange: () => void;
 }
 
-export function DomainManager({ adminKey }: DomainManagerProps) {
+export function DomainManager({ adminKey, onDomainChange }: DomainManagerProps) {
   const { toast } = useToast();
   const [domains, setDomains] = useState<Domain[]>([]);
+  const [domainToDelete, setDomainToDelete] = useState<Domain | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [newDomain, setNewDomain] = useState<NewDomain>({
     name: '',
     server: '',
@@ -28,28 +42,7 @@ export function DomainManager({ adminKey }: DomainManagerProps) {
     username: '',
     password: ''
   });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [editingDomainId, setEditingDomainId] = useState<number | null>(null);
-
-  const fetchDomains = async () => {
-    try {
-      const fetchedDomains = await getDomains();
-      setDomains(fetchedDomains);
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to fetch domains",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchDomains();
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,18 +50,23 @@ export function DomainManager({ adminKey }: DomainManagerProps) {
     
     try {
       if (editingDomainId) {
-        // Add update logic here when you implement it
-        // await updateDomain(editingDomainId, newDomain, adminKey);
+        await updateDomain(editingDomainId, newDomain, adminKey);
+        await fetchDomains();
+        toast({
+          title: "Domain Updated",
+          description: `Successfully updated domain "${newDomain.name}"`,
+          variant: "default", // Success toast
+        });
       } else {
         await addDomain(newDomain, adminKey);
+        await fetchDomains();
+        toast({
+          title: "Domain Added",
+          description: `Successfully added domain "${newDomain.name}"`,
+          variant: "default", // Success toast
+        });
       }
       
-      toast({
-        title: "Success",
-        description: editingDomainId ? "Domain updated successfully" : "Domain added successfully",
-      });
-      
-      // Reset form
       setNewDomain({
         name: '',
         server: '',
@@ -77,9 +75,7 @@ export function DomainManager({ adminKey }: DomainManagerProps) {
         password: ''
       });
       setEditingDomainId(null);
-      
-      // Refresh the domains list
-      await fetchDomains();
+      onDomainChange();
     } catch (error) {
       toast({
         variant: "destructive",
@@ -91,17 +87,24 @@ export function DomainManager({ adminKey }: DomainManagerProps) {
     }
   };
 
-  const handleDelete = async (domainId: number) => {
-    if (!confirm('Are you sure you want to delete this domain?')) return;
-    
+  // Make sure we're fetching domains when component mounts
+  useEffect(() => {
+    fetchDomains();
+  }, []);
+
+  const handleDelete = async (domain: Domain) => {
     try {
-      // We need to add this endpoint to the API
-      await deleteDomain(domainId, adminKey);
+      await deleteDomain(domain.id, adminKey);
+      setDomains(currentDomains => 
+        currentDomains.filter(d => d.id !== domain.id)
+      );
       toast({
-        title: "Success",
-        description: "Domain deleted successfully",
+        title: "Domain Deleted",
+        description: `Successfully deleted domain "${domain.name}"`,
+        variant: "default", // Success toast
       });
-      await fetchDomains();
+      setDomainToDelete(null);
+      onDomainChange();
     } catch (error) {
       toast({
         variant: "destructive",
@@ -111,15 +114,43 @@ export function DomainManager({ adminKey }: DomainManagerProps) {
     }
   };
 
-  const handleEdit = (domain: Domain) => {
-    setEditingDomainId(domain.id);
-    setNewDomain({
-      name: domain.name || '',
-      server: domain.server || '',
-      base_dn: domain.base_dn || '',
-      username: domain.username || '',
-      password: '' // Password is not returned from API for security
-    });
+  const handleEdit = async (domain: Domain) => {
+    try {
+      // Pass the adminKey to getDomain
+      const fullDomain = await getDomain(domain.id, adminKey);
+      console.log('Full domain details:', fullDomain);
+      
+      if (fullDomain) {
+        setEditingDomainId(fullDomain.id);
+        setNewDomain({
+          name: fullDomain.name || '',
+          server: fullDomain.server || '',
+          base_dn: fullDomain.base_dn || '',
+          username: fullDomain.username || '',
+          password: '' // Password is not returned from API for security
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching domain details:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load domain details",
+      });
+    }
+  };
+
+  const fetchDomains = async () => {
+    try {
+      const fetchedDomains = await getDomains();
+      setDomains(fetchedDomains);
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch domains",
+      });
+    }
   };
 
   return (
@@ -131,9 +162,7 @@ export function DomainManager({ adminKey }: DomainManagerProps) {
           <CardDescription>Manage your existing domain connections</CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div>Loading domains...</div>
-          ) : domains.length === 0 ? (
+          {domains.length === 0 ? (
             <div className="text-center text-muted-foreground py-4">
               No domains configured yet
             </div>
@@ -156,7 +185,7 @@ export function DomainManager({ adminKey }: DomainManagerProps) {
                     <Button
                       variant="destructive"
                       size="icon"
-                      onClick={() => handleDelete(domain.id)}
+                      onClick={() => setDomainToDelete(domain)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -171,8 +200,12 @@ export function DomainManager({ adminKey }: DomainManagerProps) {
       {/* Add New Domain Form */}
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
-          <CardTitle>Add New Domain</CardTitle>
-          <CardDescription>Configure a new Active Directory domain connection</CardDescription>
+          <CardTitle>{editingDomainId ? "Edit Domain" : "Add New Domain"}</CardTitle>
+          <CardDescription>
+            {editingDomainId 
+              ? "Update your Active Directory domain connection" 
+              : "Configure a new Active Directory domain connection"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -297,32 +330,55 @@ export function DomainManager({ adminKey }: DomainManagerProps) {
               />
             </div>
 
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting 
-                ? (editingDomainId ? "Updating..." : "Adding...") 
-                : (editingDomainId ? "Update Domain" : "Add Domain")}
-            </Button>
-            {editingDomainId && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  setEditingDomainId(null);
-                  setNewDomain({
-                    name: '',
-                    server: '',
-                    base_dn: '',
-                    username: '',
-                    password: ''
-                  });
-                }}
-              >
-                Cancel
+            <div className="flex gap-2">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting 
+                  ? (editingDomainId ? "Updating..." : "Adding...") 
+                  : (editingDomainId ? "Update Domain" : "Add Domain")}
               </Button>
-            )}
+              {editingDomainId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditingDomainId(null);
+                    setNewDomain({
+                      name: '',
+                      server: '',
+                      base_dn: '',
+                      username: '',
+                      password: ''
+                    });
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      <AlertDialog open={!!domainToDelete} onOpenChange={() => setDomainToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will remove the domain "{domainToDelete?.name}" from your configuration. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => domainToDelete && handleDelete(domainToDelete)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

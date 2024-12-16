@@ -105,3 +105,27 @@ def delete_domain(domain_id):
         db.commit()
         
     return '', 204
+
+@admin_bp.route('/domains/<int:domain_id>', methods=['GET'])
+@require_admin_key
+def get_domain(domain_id):
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute('''
+            SELECT id, name, server, base_dn, username, is_active 
+            FROM domains 
+            WHERE id = ?
+        ''', (domain_id,))
+        domain = cursor.fetchone()
+        
+        if domain:
+            return jsonify({
+                'id': domain[0],
+                'name': domain[1],
+                'server': domain[2],
+                'base_dn': domain[3],
+                'username': domain[4],
+                'is_active': bool(domain[5])
+            })
+        
+        return jsonify({"error": "Domain not found"}), 404

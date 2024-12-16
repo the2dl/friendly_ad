@@ -17,6 +17,7 @@ import { Domain } from '@/lib/api';
 import { DomainManager } from '@/components/admin/domainManager';
 import { AdminAuth } from '@/components/admin/AdminAuth';
 import { FirstTimeSetup } from '@/components/admin/FirstTimeSetup';
+import { Toaster } from "@/components/ui/toaster";
 
 function App() {
   const [activeTab, setActiveTab] = useState('users');
@@ -168,6 +169,22 @@ function App() {
     }
   }, [users]);
 
+  const refreshDomains = async () => {
+    try {
+      const domains = await getDomains();
+      setDomains(domains);
+      if (domains.length > 0 && !selectedDomainId) {
+        setSelectedDomainId(domains[0].id);
+      }
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to fetch domains",
+      });
+    }
+  };
+
   return (
     <ToastProvider>
       <div className="min-h-screen bg-background text-foreground">
@@ -238,14 +255,20 @@ function App() {
                       onValueChange={(value) => setSelectedDomainId(Number(value))}
                     >
                       <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder="Select Domain" />
+                        <SelectValue placeholder={domains.length === 0 ? "No domains configured" : "Select Domain"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {domains.map((domain) => (
-                          <SelectItem key={domain.id} value={domain.id.toString()}>
-                            {domain.name}
+                        {domains.length === 0 ? (
+                          <SelectItem value="none" disabled>
+                            No domains configured
                           </SelectItem>
-                        ))}
+                        ) : (
+                          domains.map((domain) => (
+                            <SelectItem key={domain.id} value={domain.id.toString()}>
+                              {domain.name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                     <div className="flex-1 max-w-3xl mx-auto flex gap-3">
@@ -260,12 +283,14 @@ function App() {
                       />
                       <Button 
                         onClick={handleSearch}
-                        disabled={isLoading}
+                        disabled={isLoading || !selectedDomainId}
                         size="lg"
                         className="h-12 px-8 text-lg"
                       >
                         {isLoading ? (
                           "Searching..."
+                        ) : !selectedDomainId ? (
+                          "Select a domain"
                         ) : (
                           <>
                             <Search className="h-5 w-5 mr-2" />
@@ -389,7 +414,10 @@ function App() {
                         setIsSetup(true);
                       }} />
                     ) : adminKey ? (
-                      <DomainManager adminKey={adminKey} />
+                      <DomainManager 
+                        adminKey={adminKey} 
+                        onDomainChange={refreshDomains} 
+                      />
                     ) : (
                       <AdminAuth onAuth={setAdminKey} />
                     )}
@@ -400,6 +428,7 @@ function App() {
           </div>
         </div>
       </div>
+      <Toaster />
     </ToastProvider>
   );
 }

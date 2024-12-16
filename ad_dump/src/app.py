@@ -30,7 +30,7 @@ CORS(app, resources={
     },
     r"/admin/*": {
         "origins": ["http://localhost:5173"],
-        "methods": ["GET", "POST", "DELETE"],
+        "methods": ["GET", "POST", "DELETE", "PUT"],
         "allow_headers": ["Content-Type", "X-Admin-Key"],
         "supports_credentials": True
     }

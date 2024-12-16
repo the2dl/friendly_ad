@@ -47,7 +47,7 @@ export async function getDomains(): Promise<Domain[]> {
   return response.json();
 }
 
-export async function addDomain(domain: NewDomain, adminKey: string): Promise<Domain> {
+export async function addDomain(domain: NewDomain, adminKey: string): Promise<void> {
   const response = await fetch(`${API_BASE_URL}/admin/domains`, {
     method: 'POST',
     headers: {
@@ -61,10 +61,12 @@ export async function addDomain(domain: NewDomain, adminKey: string): Promise<Do
     if (response.status === 401) {
       throw new ApiError(401, 'Invalid admin key');
     }
-    throw new ApiError(response.status, 'Failed to add domain');
+    const errorData = await response.json().catch(() => ({}));
+    throw new ApiError(
+      response.status, 
+      errorData.error || 'Failed to add domain'
+    );
   }
-  
-  return response.json();
 }
 
 export async function searchUsers(
@@ -182,4 +184,50 @@ export async function deleteDomain(domainId: number, adminKey: string): Promise<
     }
     throw new ApiError(response.status, 'Failed to delete domain');
   }
+}
+
+export async function updateDomain(
+  domainId: number, 
+  domain: NewDomain, 
+  adminKey: string
+): Promise<Domain> {
+  const response = await fetch(`${API_BASE_URL}/admin/domains/${domainId}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Key': adminKey
+    },
+    body: JSON.stringify(domain)
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new ApiError(401, 'Invalid admin key');
+    }
+    const errorData = await response.json().catch(() => ({}));
+    throw new ApiError(
+      response.status, 
+      errorData.error || 'Failed to update domain'
+    );
+  }
+  
+  const updatedDomain = await response.json();
+  if (!updatedDomain.id) {
+    throw new ApiError(500, 'Server returned invalid domain data');
+  }
+  
+  return updatedDomain;
+}
+
+export async function getDomain(domainId: number, adminKey: string): Promise<Domain> {
+  const response = await fetch(`${API_BASE_URL}/admin/domains/${domainId}`, {
+    headers: {
+      'X-Admin-Key': adminKey
+    }
+  });
+  
+  if (!response.ok) {
+    throw new ApiError(response.status, 'Failed to fetch domain details');
+  }
+  return response.json();
 }
