@@ -178,7 +178,7 @@ def format_group(entry):
         print(f"Error formatting group: {e}")
         return None
 
-def search_ldap(ldap_conn, search_filter, attributes, base_dn=None, page_size=100, page=1):
+def search_ldap(ldap_conn, search_filter, attributes, base_dn=None):
     try:
         if not ldap_conn:
             return {
@@ -188,42 +188,25 @@ def search_ldap(ldap_conn, search_filter, attributes, base_dn=None, page_size=10
             }
             
         ldap_conn.set_option(ldap.OPT_REFERRALS, 0)
+        ldap_conn.set_option(ldap.OPT_SIZELIMIT, 1000)
         
+        # Use the provided base_dn instead of environment variable
         search_base = base_dn or LDAP_BASE_DN
         
-        # Get total count first (with minimal attributes)
-        count_results = ldap_conn.search_s(
-            search_base,
-            ldap.SCOPE_SUBTREE,
-            search_filter,
-            ['distinguishedName']
-        )
-        total_count = len(count_results)
-        
-        # Now get the actual page of results
-        all_results = ldap_conn.search_s(
-            search_base,
-            ldap.SCOPE_SUBTREE,
-            search_filter,
-            attributes
-        )
-        
-        # Calculate pagination
-        start_idx = (page - 1) * page_size
-        end_idx = start_idx + page_size
-        paged_results = all_results[start_idx:end_idx]
-        
+        results = ldap_conn.search_s(search_base, ldap.SCOPE_SUBTREE, search_filter, attributes)
         return {
             "status": "success",
-            "results": paged_results,
-            "pagination": {
-                "total": total_count,
-                "page": page,
-                "page_size": page_size,
-                "total_pages": (total_count + page_size - 1) // page_size
-            }
+            "results": results,
+            "truncated": False
         }
-            
+    except ldap.SIZELIMIT_EXCEEDED as e:
+        print(f"LDAP size limit exceeded: {e}")
+        partial_results = e.args[0].get('partial_results', [])
+        return {
+            "status": "truncated",
+            "results": partial_results,
+            "truncated": True
+        }
     except ldap.LDAPError as e:
         print(f"LDAP Search Error: {e}")
         return {
@@ -358,35 +341,6 @@ def get_domains():
         cursor.execute('SELECT id, name FROM domains WHERE is_active = 1')
         domains = cursor.fetchall()
         return jsonify([{'id': d[0], 'name': d[1]} for d in domains])
-
-@app.route('/groups/<group_id>/members', methods=['GET'])
-def get_group_members(group_id):
-    page = int(request.args.get('page', 1))
-    page_size = int(request.args.get('pageSize', 100))
-    
-    connection_info = get_ldap_connection()
-    if not connection_info or not connection_info[0]:
-        return {"error": "Could not connect to LDAP server"}, 500
-
-    ldap_conn, base_dn = connection_info
-    search_filter = f"(&(objectClass=user)(memberOf={escape_ldap_filter(group_id)}))"
-    attributes = ['name', 'mail', 'department', 'title', 'telephoneNumber', 
-                 'manager', 'streetAddress', 'l', 'st', 'postalCode', 'co', 
-                 'memberOf', 'whenCreated', 'whenChanged', 'sAMAccountName', 
-                 'userPrincipalName', 'userAccountControl', 'lastLogon', 
-                 'pwdLastSet', 'company', 'employeeID', 'employeeType']
-
-    results = search_ldap(ldap_conn, search_filter, attributes, base_dn, page_size, page)
-    close_ldap(ldap_conn)
-
-    if results["status"] == "success":
-        users = [format_user(entry) for entry in results["results"] if format_user(entry)]
-        return {
-            "data": users,
-            "pagination": results["pagination"]
-        }
-    
-    return {"error": "Search failed"}, 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001, host='0.0.0.0')
