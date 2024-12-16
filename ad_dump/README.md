@@ -24,7 +24,7 @@ Follow these instructions to set up and run AD Dump on your local machine.
 1. **Clone the repository:**
 
     ```bash
-    git clone https://github.com/your-username/ad-dump.git
+    git clone https://github.com/the2dl/friendly_ad.git
     cd ad-dump
     ```
 
