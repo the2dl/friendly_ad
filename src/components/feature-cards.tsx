@@ -3,6 +3,8 @@ import {
   Building2,
   Globe2,
   Shield,
+  Search,
+  LucideIcon,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { User } from '@/types/user';
@@ -62,6 +64,51 @@ export function StatsCards({ users }: StatsCardsProps) {
             </p>
           </CardContent>
         </Card>
+      ))}
+    </div>
+  );
+}
+
+interface FeatureCardProps {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+function FeatureCard({ icon: Icon, title, description }: FeatureCardProps) {
+  return (
+    <div className="group relative overflow-hidden rounded-xl border bg-card p-6 hover:shadow-lg transition-all">
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      
+      <div className="relative space-y-4">
+        <div className="inline-flex p-3 rounded-lg bg-primary/10">
+          <Icon className="h-6 w-6 text-primary" />
+        </div>
+        
+        <h3 className="font-semibold text-lg">{title}</h3>
+        
+        <p className="text-sm text-muted-foreground">
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function FeatureCards() {
+  const features = [
+    {
+      icon: Search,
+      title: "Smart Search",
+      description: "Find users and groups quickly with intelligent search capabilities"
+    },
+    // ... other features
+  ];
+
+  return (
+    <div className="grid gap-6 md:grid-cols-3">
+      {features.map((feature) => (
+        <FeatureCard key={feature.title} {...feature} />
       ))}
     </div>
   );

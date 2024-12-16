@@ -22,4 +22,5 @@ export interface User {
   pwdLastSet: string | null;
   employeeID: string | null;
   postalCode: string;
+  location?: string;
 }

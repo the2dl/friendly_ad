@@ -18,6 +18,7 @@ import { DomainManager } from '@/components/admin/domainManager';
 import { AdminAuth } from '@/components/admin/AdminAuth';
 import { FirstTimeSetup } from '@/components/admin/FirstTimeSetup';
 import { Toaster } from "@/components/ui/toaster";
+import { FeatureCards } from '@/components/feature-cards';
 
 function App() {
   const [activeTab, setActiveTab] = useState('users');
@@ -185,250 +186,242 @@ function App() {
     }
   };
 
+  const handleReset = () => {
+    setSearchQuery('');
+    setUsers([]);
+    setGroups([]);
+    setHasSearched(false);
+    setSelectedUser(null);
+    setSelectedGroup(null);
+    setNavigationStack([]);
+  };
+
   return (
     <ToastProvider>
       <div className="min-h-screen bg-background text-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col space-y-8">
-            <div className="flex items-center space-x-2">
-              {activeTab === 'users' ? (
-                <Users className="h-6 w-6" />
-              ) : (
-                <UsersRound className="h-6 w-6" />
-              )}
-              <h1 className="text-2xl font-bold">Active Directory</h1>
+          <div className="mb-8">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="p-3 bg-primary/10 rounded-xl">
+                <Users className="h-8 w-8 text-primary" />
+              </div>
+              <h1 className="text-4xl font-bold tracking-tight">Directory Explorer</h1>
             </div>
+            <p className="text-xl text-muted-foreground">
+              Search and explore your Active Directory users and groups with powerful filtering and detailed insights.
+            </p>
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 rounded-lg border bg-card">
-                <div className="flex items-center space-x-2">
-                  <Search className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="font-medium">Quick Search</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Search users by name, email, employee ID, login ID, or department. Search groups by name or description.
-                </p>
-              </div>
-              
-              <div className="p-4 rounded-lg border bg-card">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="font-medium">User Details</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  View comprehensive user information including contact details and group memberships.
-                </p>
-              </div>
-              
-              <div className="p-4 rounded-lg border bg-card">
-                <div className="flex items-center space-x-2">
-                  <UsersRound className="h-5 w-5 text-muted-foreground" />
-                  <h3 className="font-medium">Group Navigation</h3>
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Explore group memberships and easily navigate between users and their groups.
-                </p>
-              </div>
-            </div>
+          <div className="space-y-8">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <div className="bg-card/50 backdrop-blur supports-[backdrop-filter]:bg-card/50 border rounded-xl p-6 space-y-6">
+                <TabsList className="grid w-full max-w-[400px] grid-cols-3">
+                  <TabsTrigger value="users">
+                    <Users className="h-4 w-4 mr-2" />
+                    Users
+                  </TabsTrigger>
+                  <TabsTrigger value="groups">
+                    <UsersRound className="h-4 w-4 mr-2" />
+                    Groups
+                  </TabsTrigger>
+                  <TabsTrigger value="admin">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Admin
+                  </TabsTrigger>
+                </TabsList>
 
-            <div className="mt-8">
-              <div className="w-full max-w-[1400px] mx-auto">
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <div className="bg-card border rounded-lg p-6 mb-6">
-                    <TabsList className="grid w-full grid-cols-3 mb-4">
-                      <TabsTrigger value="users" className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Users
-                      </TabsTrigger>
-                      <TabsTrigger value="groups" className="flex items-center gap-2">
-                        <UsersRound className="h-4 w-4" />
-                        Groups
-                      </TabsTrigger>
-                      <TabsTrigger value="admin" className="flex items-center gap-2">
-                        <Settings className="h-4 w-4" />
-                        Admin
-                      </TabsTrigger>
-                    </TabsList>
+                <div className="flex gap-4 items-center">
+                  <Select
+                    value={selectedDomainId?.toString()}
+                    onValueChange={(value) => setSelectedDomainId(Number(value))}
+                  >
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder={domains.length === 0 ? "No domains configured" : "Select Domain"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {domains.map((domain) => (
+                        <SelectItem key={domain.id} value={domain.id.toString()}>
+                          {domain.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <div className="flex-1">
+                    <SearchBar
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                      onSearch={handleSearch}
+                      placeholder={`Search ${activeTab}...`}
+                      isPrecise={isPrecise}
+                      onPreciseChange={setIsPrecise}
+                    />
                   </div>
 
-                  <div className="mb-6">
-                    <div className="flex gap-4 items-center">
-                      <Select
-                        value={selectedDomainId?.toString()}
-                        onValueChange={(value) => setSelectedDomainId(Number(value))}
-                      >
-                        <SelectTrigger className="w-[200px]">
-                          <SelectValue placeholder={domains.length === 0 ? "No domains configured" : "Select Domain"} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {domains.length === 0 ? (
-                            <SelectItem value="none" disabled>
-                              No domains configured
-                            </SelectItem>
-                          ) : (
-                            domains.map((domain) => (
-                              <SelectItem key={domain.id} value={domain.id.toString()}>
-                                {domain.name}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <div className="flex-1 flex gap-3">
-                        <SearchBar
-                          value={searchQuery}
-                          onChange={setSearchQuery}
-                          onSearch={handleSearch}
-                          placeholder={`Search ${activeTab}...`}
-                          className="flex-1 h-12 text-lg"
-                          isPrecise={isPrecise}
-                          onPreciseChange={setIsPrecise}
-                        />
-                        <Button 
-                          onClick={handleSearch}
-                          disabled={isLoading || !selectedDomainId}
-                          size="lg"
-                          className="h-12 px-8 text-lg"
-                        >
-                          {isLoading ? (
-                            "Searching..."
-                          ) : !selectedDomainId ? (
-                            "Select a domain"
-                          ) : (
-                            <>
-                              <Search className="h-5 w-5 mr-2" />
-                              Search
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                  {(hasSearched || users.length > 0 || groups.length > 0) && (
+                    <Button
+                      variant="outline"
+                      onClick={handleReset}
+                      className="h-12"
+                    >
+                      Reset
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              <TabsContent value="users">
+                {isLoading ? (
+                  <div className="text-center py-8">
+                    <p>Loading...</p>
+                  </div>
+                ) : error ? (
+                  <div className="text-center py-8 text-red-500">
+                    <p>{error}</p>
+                  </div>
+                ) : (
+                  <>
+                    {(users?.length ?? 0) > 0 ? (
+                      <UserGrid 
+                        users={users} 
+                        onUserSelect={user => handleUserSelect(user)} 
+                      />
+                    ) : (
+                      hasSearched && searchQuery && !isLoading && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <p>No users found{isPrecise ? " (using precise match)" : ""}.</p>
+                          <p className="text-sm mt-2">
+                            Try {isPrecise ? "switching to broad search" : "a different search term"}.
+                          </p>
+                        </div>
+                      )
+                    )}
+                  </>
+                )}
+                <UserDetails 
+                  user={selectedUser}
+                  open={!!selectedUser}
+                  onClose={() => {
+                    console.log('App: closing user details');
+                    const previous = navigationStack[navigationStack.length - 1];
+                    if (previous) {
+                      setNavigationStack(prev => prev.slice(0, -1));
+                      if (previous.type === 'group') {
+                        setSelectedUser(null);
+                        setSelectedGroup(previous.item as Group);
+                      } else {
+                        setSelectedGroup(null);
+                        setSelectedUser(previous.item as User);
+                      }
+                    } else {
+                      setSelectedUser(null);
+                    }
+                  }}
+                  source={navigationStack.length > 0 ? 
+                    { type: 'group', group: navigationStack[navigationStack.length - 1].item as Group } : 
+                    null
+                  }
+                  setUsers={setUsers}
+                  setSelectedUser={setSelectedUser}
+                  onReturnToGroup={(group) => {
+                    setSelectedUser(null);
+                    setSelectedGroup(group);
+                  }}
+                />
+                <GroupDetails
+                  group={selectedGroup}
+                  open={!!selectedGroup}
+                  onClose={() => {
+                    const previous = navigationStack[navigationStack.length - 1];
+                    if (previous) {
+                      setNavigationStack(prev => prev.slice(0, -1));
+                      if (previous.type === 'user') {
+                        setSelectedGroup(null);
+                        setSelectedUser(previous.item as User);
+                      } else {
+                        setSelectedUser(null);
+                        setSelectedGroup(previous.item as Group);
+                      }
+                    } else {
+                      setSelectedGroup(null);
+                    }
+                  }}
+                  source={navigationStack.length > 0 ? 
+                    { type: 'user', user: navigationStack[navigationStack.length - 1].item as User } : 
+                    null
+                  }
+                  onUserSelect={handleUserSelect}
+                  userSource={userSource}
+                />
+              </TabsContent>
+
+              <TabsContent value="groups">
+                {groups.length > 0 ? (
+                  <GroupGrid groups={filteredGroups} onGroupSelect={setSelectedGroup} />
+                ) : (
+                  hasSearched && searchQuery && !isLoading && (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No groups found{isPrecise ? " (using precise match)" : ""}.</p>
+                      <p className="text-sm mt-2">Try {isPrecise ? "switching to broad search" : "a different search term"}.</p>
                     </div>
-                  </div>
+                  )
+                )}
+                <GroupDetails
+                  group={selectedGroup}
+                  open={!!selectedGroup}
+                  onClose={() => setSelectedGroup(null)}
+                  source={selectedUser ? { type: 'user', user: selectedUser } : null}
+                  onUserSelect={handleUserSelect}
+                  userSource={userSource}
+                />
+              </TabsContent>
 
-                  <div className="bg-card/50 border rounded-lg p-6">
-                    <TabsContent value="users" className="mt-6">
-                      {isLoading ? (
-                        <div className="text-center py-8">
-                          <p>Loading...</p>
-                        </div>
-                      ) : error ? (
-                        <div className="text-center py-8 text-red-500">
-                          <p>{error}</p>
-                        </div>
-                      ) : (
-                        <>
-                          {(users?.length ?? 0) > 0 ? (
-                            <UserGrid 
-                              users={users} 
-                              onUserSelect={user => handleUserSelect(user)} 
-                            />
-                          ) : (
-                            hasSearched && searchQuery && !isLoading && (
-                              <div className="text-center py-8 text-muted-foreground">
-                                <p>No users found{isPrecise ? " (using precise match)" : ""}.</p>
-                                <p className="text-sm mt-2">
-                                  Try {isPrecise ? "switching to broad search" : "a different search term"}.
-                                </p>
-                              </div>
-                            )
-                          )}
-                        </>
-                      )}
-                      <UserDetails 
-                        user={selectedUser}
-                        open={!!selectedUser}
-                        onClose={() => {
-                          console.log('App: closing user details');
-                          const previous = navigationStack[navigationStack.length - 1];
-                          if (previous) {
-                            setNavigationStack(prev => prev.slice(0, -1));
-                            if (previous.type === 'group') {
-                              setSelectedUser(null);
-                              setSelectedGroup(previous.item as Group);
-                            } else {
-                              setSelectedGroup(null);
-                              setSelectedUser(previous.item as User);
-                            }
-                          } else {
-                            setSelectedUser(null);
-                          }
-                        }}
-                        source={navigationStack.length > 0 ? 
-                          { type: 'group', group: navigationStack[navigationStack.length - 1].item as Group } : 
-                          null
-                        }
-                        setUsers={setUsers}
-                        setSelectedUser={setSelectedUser}
-                        onReturnToGroup={(group) => {
-                          setSelectedUser(null);
-                          setSelectedGroup(group);
-                        }}
-                      />
-                      <GroupDetails
-                        group={selectedGroup}
-                        open={!!selectedGroup}
-                        onClose={() => {
-                          const previous = navigationStack[navigationStack.length - 1];
-                          if (previous) {
-                            setNavigationStack(prev => prev.slice(0, -1));
-                            if (previous.type === 'user') {
-                              setSelectedGroup(null);
-                              setSelectedUser(previous.item as User);
-                            } else {
-                              setSelectedUser(null);
-                              setSelectedGroup(previous.item as Group);
-                            }
-                          } else {
-                            setSelectedGroup(null);
-                          }
-                        }}
-                        source={navigationStack.length > 0 ? 
-                          { type: 'user', user: navigationStack[navigationStack.length - 1].item as User } : 
-                          null
-                        }
-                        onUserSelect={handleUserSelect}
-                        userSource={userSource}
-                      />
-                    </TabsContent>
+              <TabsContent value="admin">
+                {isSetup === false ? (
+                  <FirstTimeSetup onSetupComplete={(key) => {
+                    setAdminKey(key);
+                    setIsSetup(true);
+                  }} />
+                ) : adminKey ? (
+                  <DomainManager 
+                    adminKey={adminKey} 
+                    onDomainChange={refreshDomains} 
+                  />
+                ) : (
+                  <AdminAuth onAuth={setAdminKey} />
+                )}
+              </TabsContent>
+            </Tabs>
 
-                    <TabsContent value="groups" className="mt-6">
-                      {groups.length > 0 ? (
-                        <GroupGrid groups={filteredGroups} onGroupSelect={setSelectedGroup} />
-                      ) : (
-                        hasSearched && searchQuery && !isLoading && (
-                          <div className="text-center py-8 text-muted-foreground">
-                            <p>No groups found{isPrecise ? " (using precise match)" : ""}.</p>
-                            <p className="text-sm mt-2">Try {isPrecise ? "switching to broad search" : "a different search term"}.</p>
-                          </div>
-                        )
-                      )}
-                      <GroupDetails
-                        group={selectedGroup}
-                        open={!!selectedGroup}
-                        onClose={() => setSelectedGroup(null)}
-                        source={selectedUser ? { type: 'user', user: selectedUser } : null}
-                        onUserSelect={handleUserSelect}
-                        userSource={userSource}
-                      />
-                    </TabsContent>
-
-                    <TabsContent value="admin" className="mt-6">
-                      {isSetup === false ? (
-                        <FirstTimeSetup onSetupComplete={(key) => {
-                          setAdminKey(key);
-                          setIsSetup(true);
-                        }} />
-                      ) : adminKey ? (
-                        <DomainManager 
-                          adminKey={adminKey} 
-                          onDomainChange={refreshDomains} 
-                        />
-                      ) : (
-                        <AdminAuth onAuth={setAdminKey} />
-                      )}
-                    </TabsContent>
-                  </div>
-                </Tabs>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="p-6 rounded-xl border bg-card hover:shadow-lg transition-all">
+                <div className="p-3 bg-primary/10 rounded-lg w-fit mb-4">
+                  <Search className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Smart Search</h3>
+                <p className="text-muted-foreground">
+                  Find users and groups quickly with intelligent search capabilities
+                </p>
+              </div>
+              
+              <div className="p-6 rounded-xl border bg-card hover:shadow-lg transition-all">
+                <div className="p-3 bg-primary/10 rounded-lg w-fit mb-4">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">User Insights</h3>
+                <p className="text-muted-foreground">
+                  Comprehensive user details including group memberships and permissions
+                </p>
+              </div>
+              
+              <div className="p-6 rounded-xl border bg-card hover:shadow-lg transition-all">
+                <div className="p-3 bg-primary/10 rounded-lg w-fit mb-4">
+                  <UsersRound className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Group Management</h3>
+                <p className="text-muted-foreground">
+                  Explore and manage group hierarchies and memberships
+                </p>
               </div>
             </div>
           </div>

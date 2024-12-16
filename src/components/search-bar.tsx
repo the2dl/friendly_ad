@@ -2,6 +2,8 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Target } from 'lucide-react';
 
 interface SearchBarProps {
   value: string;
@@ -22,49 +24,37 @@ export function SearchBar({
   isPrecise,
   onPreciseChange 
 }: SearchBarProps) {
-  const isSAMAccountName = (query: string): boolean => {
-    return /^[^@\s]+$/i.test(query);
-  };
-
   return (
-    <div className="relative w-full flex gap-2 items-center">
+    <div className="relative w-full flex gap-3 items-center">
       <div className="relative flex-1">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center">
+          <Search className="h-5 w-5 text-muted-foreground" />
+        </div>
         <Input
           placeholder={placeholder}
           value={value}
-          onChange={(e) => {
-            const newValue = e.target.value;
-            onChange(newValue);
-            if (isSAMAccountName(newValue) && !isPrecise) {
-              onPreciseChange(true);
-            }
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              onSearch();
-            }
-          }}
-          className={cn(
-            "w-full pl-11 pr-4 text-base",
-            "bg-background border-input",
-            "focus-visible:ring-1 focus-visible:ring-ring",
-            className
-          )}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && onSearch()}
+          className="w-full pl-10 h-12 text-base bg-background/50 backdrop-blur-sm pr-24"
         />
+        <div className="absolute right-2 top-1/2 -translate-y-1/2">
+          <Toggle
+            pressed={isPrecise}
+            onPressedChange={onPreciseChange}
+            className="h-8 px-3 rounded-lg data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+          >
+            <Target className="h-4 w-4" />
+          </Toggle>
+        </div>
       </div>
-      <Toggle
-        pressed={isPrecise}
-        onPressedChange={onPreciseChange}
-        className={cn(
-          "min-w-[100px]",
-          isPrecise
-            ? "bg-primary text-primary-foreground hover:bg-primary/90"
-            : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
-        )}
+      
+      <Button 
+        onClick={onSearch}
+        size="lg"
+        className="h-12 px-6"
       >
-        {isPrecise ? "Precise" : "Broad"}
-      </Toggle>
+        Search
+      </Button>
     </div>
   );
 }
