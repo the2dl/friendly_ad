@@ -286,29 +286,31 @@ export function GroupDetails({
           {renderBreadcrumbs()}
 
           {/* Group Header */}
-          <div className="flex justify-between items-start">
-            <div className="p-4 bg-secondary rounded-lg">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="p-4 bg-secondary rounded-lg shrink-0">
               <UsersRound className="h-10 w-10" />
             </div>
-            <div className="space-y-1">
-              <DialogTitle className="text-2xl font-bold tracking-tight">
-                {group.name}
-              </DialogTitle>
-              <p className="text-muted-foreground">
-                {group.description || 'No description available'}
-              </p>
-              <Badge 
-                variant={group.type === 'security' ? 'default' : 'secondary'} 
-                className="mt-2"
-              >
-                {group.type}
-              </Badge>
+            <div className="flex-1 min-w-0">
+              <div className="space-y-1">
+                <DialogTitle className="text-2xl font-bold tracking-tight break-words">
+                  {group.name}
+                </DialogTitle>
+                <p className="text-muted-foreground break-words">
+                  {group.description || 'No description available'}
+                </p>
+                <Badge 
+                  variant={group.type === 'security' ? 'default' : 'secondary'} 
+                  className="mt-2"
+                >
+                  {group.type}
+                </Badge>
+              </div>
             </div>
             <Button
               variant="outline"
               size="icon"
               onClick={handleShare}
-              className="ml-4"
+              className="shrink-0"
               title="Share group link"
             >
               <Share2 className="h-4 w-4" />
