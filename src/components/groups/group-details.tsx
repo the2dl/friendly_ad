@@ -123,6 +123,9 @@ export function GroupDetails({
   const [showMembers, setShowMembers] = useState(false);
   const [isResultsTruncated, setIsResultsTruncated] = useState(false);
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setGroup(initialGroup);
@@ -131,24 +134,27 @@ export function GroupDetails({
 
   useEffect(() => {
     if (open && initialGroup?.id) {
+      setIsLoading(true);
       getGroupDetails(initialGroup.id)
         .then(data => {
           setGroup(data);
-          return searchGroupMembers(data.id);
+          return searchGroupMembers(data.id, currentPage);
         })
         .then(response => {
           if (response) {
             setMembers(response.data || []);
-            setIsResultsTruncated(response.truncated || false);
+            setTotalPages(response.pagination.total_pages);
           }
         })
         .catch(error => {
           console.error('Failed to fetch group details:', error);
           setMembers([]);
-          setIsResultsTruncated(false);
+        })
+        .finally(() => {
+          setIsLoading(false);
         });
     }
-  }, [open, initialGroup?.id]);
+  }, [open, initialGroup?.id, currentPage]);
 
   const handleUserSelect = (user: User) => {
     console.log('Handling user selection:', user.name);
@@ -395,6 +401,34 @@ export function GroupDetails({
               )}
             </div>
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center gap-2 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1 || isLoading}
+              >
+                Previous
+              </Button>
+              <span className="py-2">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || isLoading}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+          
+          {isLoading && (
+            <div className="flex justify-center">
+              <span>Loading...</span>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

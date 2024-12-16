@@ -125,8 +125,29 @@ export async function searchGroups(
   return response.json();
 }
 
-export async function searchGroupMembers(groupDN: string): Promise<SearchResponse<User>> {
-  const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(groupDN)}&type=group_members`);
+interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    total: number;
+    page: number;
+    page_size: number;
+    total_pages: number;
+  };
+}
+
+export async function searchGroupMembers(
+  groupDN: string, 
+  page: number = 1, 
+  pageSize: number = 100
+): Promise<PaginatedResponse<User>> {
+  const params = new URLSearchParams({
+    query: groupDN,
+    type: 'group_members',
+    page: page.toString(),
+    pageSize: pageSize.toString()
+  });
+
+  const response = await fetch(`${API_BASE_URL}/search?${params}`);
   if (!response.ok) {
     throw new Error('Failed to fetch group members');
   }
