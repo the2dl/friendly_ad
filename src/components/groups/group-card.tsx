@@ -27,21 +27,25 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
 
   return (
     <Card 
-      className="p-6 cursor-pointer hover:bg-accent/50 transition-colors"
+      className="p-6 cursor-pointer hover:bg-secondary/80 transition-all border bg-card"
       onClick={onClick}
     >
-      <div className="flex flex-col space-y-4">
-        <div className="flex items-start gap-6">
+      <div className="flex flex-col space-y-6">
+        <div className="flex items-start justify-between">
           <div>
-            <div className="flex items-center space-x-2">
-              <Shield className="h-5 w-5 text-primary" />
-              <h3 className="font-medium text-lg">{group.name}</h3>
+            <div className="flex items-center space-x-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Shield className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg tracking-tight">{group.name}</h3>
+                {group.type && (
+                  <p className="text-sm text-muted-foreground">
+                    {group.type.charAt(0).toUpperCase() + group.type.slice(1)} Group
+                  </p>
+                )}
+              </div>
             </div>
-            {group.type && (
-              <p className="text-sm text-muted-foreground mt-1">
-                {group.type.charAt(0).toUpperCase() + group.type.slice(1)} Group
-              </p>
-            )}
           </div>
         </div>
 
@@ -63,14 +67,7 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
           {group.owner && (
             <div className="flex items-center text-sm text-muted-foreground">
               <UserCog className="mr-2 h-4 w-4" />
-              Owner: {group.owner}
-            </div>
-          )}
-
-          {created && (
-            <div className="flex items-center text-sm text-muted-foreground">
-              <Clock className="mr-2 h-4 w-4" />
-              Created: {format(created, 'PPpp')}
+              {group.owner}
             </div>
           )}
         </div>

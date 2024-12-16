@@ -82,7 +82,7 @@ function GroupMembersView({ groupName, users, onBack, onClose, onUserSelect }: G
         {users.map((user) => (
           <div 
             key={user.id}
-            className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm hover:bg-secondary/80 cursor-pointer transition-colors"
+            className="p-4 rounded-lg border hover:bg-secondary/80 cursor-pointer transition-colors"
             onClick={() => onUserSelect(user)}
             role="button"
             tabIndex={0}
@@ -261,7 +261,7 @@ export function UserDetails({
                       {user.memberOf.map((group) => (
                         <Badge 
                           key={group} 
-                          variant="secondary"
+                          variant="outline"
                           className="cursor-pointer hover:bg-secondary/80 transition-colors"
                           onClick={() => {
                             const groupName = group.split(',')[0].replace('CN=', '');

@@ -1,9 +1,14 @@
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Search, Target } from 'lucide-react';
 import { Toggle } from '@/components/ui/toggle';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Target } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface SearchBarProps {
   value: string;
@@ -38,13 +43,31 @@ export function SearchBar({
           className="w-full pl-10 h-12 text-base bg-background/50 backdrop-blur-sm pr-24"
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2">
-          <Toggle
-            pressed={isPrecise}
-            onPressedChange={onPreciseChange}
-            className="h-8 px-3 rounded-lg data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
-          >
-            <Target className="h-4 w-4" />
-          </Toggle>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Toggle
+                  pressed={isPrecise}
+                  onPressedChange={onPreciseChange}
+                  className={cn(
+                    "h-8 px-3 rounded-lg transition-all",
+                    isPrecise 
+                      ? "bg-primary text-primary-foreground" 
+                      : "bg-secondary hover:bg-secondary/80"
+                  )}
+                >
+                  {isPrecise ? (
+                    <Target className="h-4 w-4" />
+                  ) : (
+                    <Search className="h-4 w-4" />
+                  )}
+                </Toggle>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{isPrecise ? 'Precise search (exact match)' : 'Broad search (partial match)'}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
       

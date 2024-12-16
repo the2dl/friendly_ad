@@ -12,16 +12,16 @@ interface UserCardProps {
 export function UserCard({ user, onClick }: UserCardProps) {
   return (
     <Card
-      className="p-6 cursor-pointer hover:bg-accent/50 transition-colors"
+      className="p-6 cursor-pointer hover:bg-secondary/80 transition-all border bg-card"
       onClick={() => onClick(user)}
     >
-      <div className="flex flex-col space-y-4">
-        <div className="flex items-start gap-6">
+      <div className="flex flex-col space-y-6">
+        <div className="flex items-start justify-between">
           <div className="flex items-center space-x-4">
             <div className="relative">
-              <Avatar className="h-12 w-12">
-                <AvatarFallback className="bg-primary/10 text-primary">
-                  {user.name.slice(0, 2).toUpperCase()}
+              <Avatar className="h-14 w-14">
+                <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                  {user.name?.slice(0, 2).toUpperCase() || 'N/A'}
                 </AvatarFallback>
               </Avatar>
               <div 
@@ -31,21 +31,25 @@ export function UserCard({ user, onClick }: UserCardProps) {
               />
             </div>
             <div>
-              <h3 className="font-medium text-lg">{user.name}</h3>
-              <p className="text-sm text-muted-foreground">{user.title}</p>
+              <h3 className="font-semibold text-lg tracking-tight">{user.name}</h3>
+              <p className="text-sm text-muted-foreground">{user.title || 'No title'}</p>
             </div>
           </div>
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Building2 className="mr-2 h-4 w-4" />
-            {user.department}
-          </div>
-          <div className="flex items-center text-sm text-muted-foreground">
-            <Mail className="mr-2 h-4 w-4" />
-            {user.email}
-          </div>
+          {user.department && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Building2 className="mr-2 h-4 w-4" />
+              {user.department}
+            </div>
+          )}
+          {user.email && (
+            <div className="flex items-center text-sm text-muted-foreground">
+              <Mail className="mr-2 h-4 w-4" />
+              {user.email}
+            </div>
+          )}
         </div>
       </div>
     </Card>
