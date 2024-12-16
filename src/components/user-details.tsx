@@ -131,143 +131,141 @@ export function UserDetails({
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-[800px] max-h-[80vh] overflow-y-auto">
-        <DialogHeader className="space-y-4">
-          <DialogDescription className="sr-only">
-            User Details
-          </DialogDescription>
+      <DialogContent className="max-w-[800px] max-h-[80vh] overflow-y-auto p-6">
+        <DialogHeader className="space-y-6">
+          <DialogDescription className="sr-only">User Details</DialogDescription>
+          
+          {/* Breadcrumb Navigation */}
           {source?.type === 'group' && (
             <div className="flex items-center space-x-2">
               <Button 
                 variant="ghost" 
                 onClick={onClose}
-                className="hover:bg-secondary/80"
+                className="hover:bg-secondary/80 -ml-2"
               >
                 Back to {source.group.name}
               </Button>
-              <ChevronRight className="h-4 w-4" />
-              <span className="font-semibold">User Details</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <span className="font-medium">User Details</span>
             </div>
           )}
-          <div className="flex items-center space-x-4">
-            <Avatar className="h-16 w-16">
-              <AvatarFallback>{user.name?.slice(0, 2).toUpperCase() || 'N/A'}</AvatarFallback>
+
+          {/* User Header */}
+          <div className="flex items-start space-x-4">
+            <Avatar className="h-20 w-20">
+              <AvatarFallback className="text-xl">
+                {user.name?.slice(0, 2).toUpperCase() || 'N/A'}
+              </AvatarFallback>
             </Avatar>
-            <div>
-              <DialogTitle className="text-2xl">{user.name || 'N/A'}</DialogTitle>
-              <p className="text-sm text-muted-foreground">{user.title || 'N/A'}</p>
+            <div className="space-y-1">
+              <DialogTitle className="text-2xl font-bold tracking-tight">
+                {user.name || 'N/A'}
+              </DialogTitle>
+              <p className="text-muted-foreground">{user.title || 'No title'}</p>
+              <Badge variant={user.enabled ? 'default' : 'secondary'} className="mt-2">
+                {user.enabled ? 'Enabled' : 'Disabled'}
+              </Badge>
             </div>
           </div>
-          <Badge variant={user.enabled ? 'default' : 'secondary'} className="w-fit">
-            {user.enabled ? 'Enabled' : 'Disabled'}
-          </Badge>
         </DialogHeader>
 
-        <div className="mt-6 space-y-6">
-          {/* Account Information - Always show these core fields */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Account Information</h4>
+        <div className="mt-8 space-y-8">
+          {/* Account Information */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold tracking-tight">Account Information</h4>
             <Separator />
-            <div className="space-y-2">
-              <div className="flex items-center space-x-2 text-sm">
-                <UserIcon className="h-4 w-4 text-muted-foreground" />
-                <span>Username: {user.samAccountName || 'N/A'}</span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm">
-                <AtSign className="h-4 w-4 text-muted-foreground" />
-                <span>UPN: {user.userPrincipalName || 'N/A'}</span>
-              </div>
-              {user.employeeID && (
-                <div className="flex items-center space-x-2 text-sm">
-                  <Hash className="h-4 w-4 text-muted-foreground" />
-                  <span>Employee ID: {user.employeeID}</span>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-4">
+                <div className="flex items-center space-x-2">
+                  <UserIcon className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">Username: {user.samAccountName || 'N/A'}</span>
                 </div>
-              )}
-              {user.company && (
-                <div className="flex items-center space-x-2 text-sm">
-                  <Building2 className="h-4 w-4 text-muted-foreground" />
-                  <span>Company: {user.company}</span>
+                <div className="flex items-center space-x-2">
+                  <AtSign className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm">UPN: {user.userPrincipalName || 'N/A'}</span>
+                </div>
+              </div>
+              {(user.employeeID || user.company) && (
+                <div className="space-y-4">
+                  {user.employeeID && (
+                    <div className="flex items-center space-x-2">
+                      <Hash className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Employee ID: {user.employeeID}</span>
+                    </div>
+                  )}
+                  {user.company && (
+                    <div className="flex items-center space-x-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">Company: {user.company}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Contact Information - Show section only if any contact info exists */}
+          {/* Contact Information */}
           {(user.email || user.phone || user.street || user.city || user.state || user.postalCode || user.country) && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Contact Information</h4>
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold tracking-tight">Contact Information</h4>
               <Separator />
-              <div className="space-y-2">
-                {user.email && (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Mail className="h-4 w-4 text-muted-foreground" />
-                    <span>{user.email}</span>
-                  </div>
-                )}
-                {user.phone && (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Phone className="h-4 w-4 text-muted-foreground" />
-                    <span>{user.phone}</span>
-                  </div>
-                )}
-                {user.street && (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{user.street}</span>
-                  </div>
-                )}
-                {user.city && (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{user.city}</span>
-                  </div>
-                )}
-                {user.state && (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{user.state}</span>
-                  </div>
-                )}
-                {user.postalCode && (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{user.postalCode}</span>
-                  </div>
-                )}
-                {user.country && (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
-                    <span>{user.country}</span>
-                  </div>
-                )}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-4">
+                  {user.email && (
+                    <div className="flex items-center space-x-2">
+                      <Mail className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{user.email}</span>
+                    </div>
+                  )}
+                  {user.phone && (
+                    <div className="flex items-center space-x-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm">{user.phone}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-4">
+                  {[user.street, user.city, user.state, user.postalCode, user.country]
+                    .filter(Boolean)
+                    .map((value, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm">{value}</span>
+                      </div>
+                    ))
+                  }
+                </div>
               </div>
             </div>
           )}
 
-          {/* Department & Groups - Show if department exists or has groups */}
+          {/* Groups & Department */}
           {(user.department || (user.memberOf && user.memberOf.length > 0)) && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Department & Groups</h4>
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold tracking-tight">Groups & Department</h4>
               <Separator />
-              <div className="space-y-2">
+              <div className="space-y-4">
                 {user.department && (
-                  <div className="flex items-center space-x-2 text-sm">
+                  <div className="flex items-center space-x-2">
                     <Building2 className="h-4 w-4 text-muted-foreground" />
-                    <span>{user.department}</span>
+                    <span className="text-sm">{user.department}</span>
                   </div>
                 )}
                 {user.memberOf && user.memberOf.length > 0 && (
-                  <div className="flex items-center space-x-2 text-sm">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <div className="flex flex-wrap gap-1">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Users className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Group Memberships</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
                       {user.memberOf.map((group) => (
                         <Badge 
                           key={group} 
                           variant="secondary"
-                          className="cursor-pointer hover:bg-secondary/80"
+                          className="cursor-pointer hover:bg-secondary/80 transition-colors"
                           onClick={() => {
                             const groupName = group.split(',')[0].replace('CN=', '');
-                            const groupObj: Group = {
+                            const groupObj = {
                               id: group,
                               name: groupName,
                               type: 'security',
@@ -278,13 +276,9 @@ export function UserDetails({
                               owner: '',
                             };
                             
-                            console.log('Clicking group from user:', user.name);
-                            
                             if (onReturnToGroup) {
                               onClose();
-                              setTimeout(() => {
-                                onReturnToGroup(groupObj);
-                              }, 100);
+                              setTimeout(() => onReturnToGroup(groupObj), 100);
                             }
                           }}
                         >
@@ -298,32 +292,40 @@ export function UserDetails({
             </div>
           )}
 
-          {/* Additional Information - Always show these timestamps */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Additional Information</h4>
+          {/* Additional Information */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold tracking-tight">Additional Information</h4>
             <Separator />
-            <div className="space-y-2">
+            <div className="grid gap-4 md:grid-cols-2">
               {user.manager && (
-                <div className="flex items-center space-x-2 text-sm">
+                <div className="flex items-center space-x-2">
                   <UserCircle className="h-4 w-4 text-muted-foreground" />
-                  <span>Manager: {cleanManagerName(user.manager)}</span>
+                  <span className="text-sm">Manager: {cleanManagerName(user.manager)}</span>
                 </div>
               )}
-              <div className="flex items-center space-x-2 text-sm">
+              <div className="flex items-center space-x-2">
                 <Key className="h-4 w-4 text-muted-foreground" />
-                <span>Last Password Set: {user.pwdLastSet ? format(new Date(parseInt(user.pwdLastSet) / 10000 - 11644473600000), 'PPpp') : 'Never'}</span>
+                <span className="text-sm">
+                  Last Password Set: {user.pwdLastSet ? format(new Date(parseInt(user.pwdLastSet) / 10000 - 11644473600000), 'PPpp') : 'Never'}
+                </span>
               </div>
-              <div className="flex items-center space-x-2 text-sm">
+              <div className="flex items-center space-x-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>Last Logon: {user.lastLogon ? format(new Date(parseInt(user.lastLogon) / 10000 - 11644473600000), 'PPpp') : 'Never'}</span>
+                <span className="text-sm">
+                  Last Logon: {user.lastLogon ? format(new Date(parseInt(user.lastLogon) / 10000 - 11644473600000), 'PPpp') : 'Never'}
+                </span>
               </div>
-              <div className="flex items-center space-x-2 text-sm">
+              <div className="flex items-center space-x-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>Created: {user.created ? format(parseADTimestamp(user.created), 'PPpp') : 'Unknown'}</span>
+                <span className="text-sm">
+                  Created: {user.created ? format(parseADTimestamp(user.created), 'PPpp') : 'Unknown'}
+                </span>
               </div>
-              <div className="flex items-center space-x-2 text-sm">
+              <div className="flex items-center space-x-2">
                 <Clock className="h-4 w-4 text-muted-foreground" />
-                <span>Last Modified: {user.lastModified ? format(parseADTimestamp(user.lastModified), 'PPpp') : 'Unknown'}</span>
+                <span className="text-sm">
+                  Modified: {user.lastModified ? format(parseADTimestamp(user.lastModified), 'PPpp') : 'Unknown'}
+                </span>
               </div>
             </div>
           </div>
