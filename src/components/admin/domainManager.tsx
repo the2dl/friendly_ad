@@ -291,14 +291,14 @@ export function DomainManager({ adminKey, onDomainChange }: DomainManagerProps) 
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Service account username in DN format</p>
-                      <p>Example: "cn=domainuser,dc=mtx,dc=domain"</p>
+                      <p>Example: "cn=domainuser,cn=users,dc=mtx,dc=domain"</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
               <Input
                 id="username"
-                placeholder="cn=domainuser,dc=mtx,dc=domain"
+                placeholder="cn=domainuser,cn=users,dc=mtx,dc=domain"
                 value={newDomain.username}
                 onChange={(e) => setNewDomain(prev => ({ ...prev, username: e.target.value }))}
                 required
