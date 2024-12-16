@@ -199,16 +199,42 @@ def search_ldap(ldap_conn, search_filter, attributes, base_dn=None):
             "truncated": False
         }
     except ldap.SIZELIMIT_EXCEEDED as e:
-        # Get the partial results from the exception
-        partial_results = e.args[0].get('partial_results', []) if e.args else []
-        if not partial_results and hasattr(e, 'partial'):
-            partial_results = e.partial  # Some LDAP implementations use this attribute
-        
-        return {
-            "status": "success",  # Changed from "truncated" to "success"
-            "results": partial_results,
-            "truncated": True
-        }
+        try:
+            # First try to get results from the exception
+            partial_results = []
+            
+            # Try different ways to get partial results
+            if hasattr(e, 'partial'):
+                partial_results = e.partial
+            elif e.args and isinstance(e.args[0], dict):
+                partial_results = e.args[0].get('partial_results', [])
+            elif hasattr(e, 'message') and isinstance(e.message, dict):
+                partial_results = e.message.get('partial_results', [])
+            
+            # If we still don't have results, try one more search with a smaller limit
+            if not partial_results:
+                ldap_conn.set_option(ldap.OPT_SIZELIMIT, 1000)  # Reset to ensure clean state
+                partial_results = ldap_conn.search_s(
+                    search_base,
+                    ldap.SCOPE_SUBTREE,
+                    search_filter,
+                    attributes,
+                    sizelimit=1000
+                )
+            
+            return {
+                "status": "success",
+                "results": partial_results,
+                "truncated": True
+            }
+        except Exception as inner_e:
+            print(f"Error handling partial results: {inner_e}")
+            return {
+                "status": "error",
+                "results": [],
+                "error": "Failed to retrieve partial results"
+            }
+            
     except ldap.LDAPError as e:
         print(f"LDAP Search Error: {e}")
         return {
