@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, UsersRound, Search } from 'lucide-react';
+import { Users, UsersRound, Search, Settings } from 'lucide-react';
 import { User } from '@/types/user';
 import { Group } from '@/types/group';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,9 +9,14 @@ import { UserDetails } from '@/components/user-details';
 import { GroupGrid } from '@/components/groups/group-grid';
 import { GroupDetails } from '@/components/groups/group-details';
 import { Button } from "@/components/ui/button";
-import { searchUsers, searchGroups } from '@/lib/api';
+import { searchUsers, searchGroups, getDomains, checkSetupStatus } from '@/lib/api';
 import { useToast } from "@/hooks/use-toast"
 import { ToastProvider } from "@/components/ui/toast"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Domain } from '@/lib/api';
+import { DomainManager } from '@/components/admin/domainManager';
+import { AdminAuth } from '@/components/admin/AdminAuth';
+import { FirstTimeSetup } from '@/components/admin/FirstTimeSetup';
 
 function App() {
   const [activeTab, setActiveTab] = useState('users');
@@ -30,6 +35,48 @@ function App() {
   const [isPrecise, setIsPrecise] = useState(true);
   const [hasSearched, setHasSearched] = useState(false);
   const { toast } = useToast()
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [selectedDomainId, setSelectedDomainId] = useState<number | null>(null);
+  const [adminKey, setAdminKey] = useState<string | null>(null);
+  const [isSetup, setIsSetup] = useState<boolean | null>(null);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    const fetchDomains = async () => {
+      try {
+        const domains = await getDomains();
+        setDomains(domains);
+        if (domains.length > 0) {
+          setSelectedDomainId(domains[0].id);
+        }
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to fetch domains",
+        });
+      }
+    };
+    
+    fetchDomains();
+  }, []);
+
+  useEffect(() => {
+    const checkSetup = async () => {
+      try {
+        const isSetupComplete = await checkSetupStatus();
+        setIsSetup(isSetupComplete);
+      } catch (error) {
+        console.error('Failed to check setup status:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to check setup status",
+        });
+      }
+    };
+    checkSetup();
+  }, []);
 
   const handleSearch = async () => {
     if (!searchQuery) {
@@ -44,10 +91,10 @@ function App() {
     
     try {
       if (activeTab === 'users') {
-        const data = await searchUsers(searchQuery, isPrecise);
+        const data = await searchUsers(searchQuery, isPrecise, selectedDomainId || undefined);
         setUsers(data.data);
       } else {
-        const data = await searchGroups(searchQuery, isPrecise);
+        const data = await searchGroups(searchQuery, isPrecise, selectedDomainId || undefined);
         setGroups(data.data);
       }
     } catch (err: unknown) {
@@ -77,8 +124,6 @@ function App() {
       setIsLoading(false);
     }
   };
-
-  const filteredUsers = users;
 
   const filteredGroups = groups;
 
@@ -116,6 +161,12 @@ function App() {
     setSelectedGroup(group);
     setSelectedUser(null);
   };
+
+  useEffect(() => {
+    if (users) {
+      setFilteredUsers(users);
+    }
+  }, [users]);
 
   return (
     <ToastProvider>
@@ -166,7 +217,7 @@ function App() {
             <div className="mt-8 p-6 rounded-lg border bg-card">
               <div className="max-w-2xl mx-auto">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsList className="grid w-full grid-cols-3 mb-4">
                     <TabsTrigger value="users" className="flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       Users
@@ -175,9 +226,28 @@ function App() {
                       <UsersRound className="h-4 w-4" />
                       Groups
                     </TabsTrigger>
+                    <TabsTrigger value="admin" className="flex items-center gap-2">
+                      <Settings className="h-4 w-4" />
+                      Admin
+                    </TabsTrigger>
                   </TabsList>
 
-                  <div className="flex gap-2 mt-6">
+                  <div className="flex gap-4 items-center mb-4">
+                    <Select
+                      value={selectedDomainId?.toString()}
+                      onValueChange={(value) => setSelectedDomainId(Number(value))}
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Select Domain" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {domains.map((domain) => (
+                          <SelectItem key={domain.id} value={domain.id.toString()}>
+                            {domain.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <div className="flex-1 max-w-3xl mx-auto flex gap-3">
                       <SearchBar
                         value={searchQuery}
@@ -207,15 +277,32 @@ function App() {
                   </div>
 
                   <TabsContent value="users" className="mt-6">
-                    {users.length > 0 ? (
-                      <UserGrid users={filteredUsers} onUserSelect={user => handleUserSelect(user)} />
+                    {isLoading ? (
+                      <div className="text-center py-8">
+                        <p>Loading...</p>
+                      </div>
+                    ) : error ? (
+                      <div className="text-center py-8 text-red-500">
+                        <p>{error}</p>
+                      </div>
                     ) : (
-                      hasSearched && searchQuery && !isLoading && (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <p>No users found{isPrecise ? " (using precise match)" : ""}.</p>
-                          <p className="text-sm mt-2">Try {isPrecise ? "switching to broad search" : "a different search term"}.</p>
-                        </div>
-                      )
+                      <>
+                        {(users?.length ?? 0) > 0 ? (
+                          <UserGrid 
+                            users={users} 
+                            onUserSelect={user => handleUserSelect(user)} 
+                          />
+                        ) : (
+                          hasSearched && searchQuery && !isLoading && (
+                            <div className="text-center py-8 text-muted-foreground">
+                              <p>No users found{isPrecise ? " (using precise match)" : ""}.</p>
+                              <p className="text-sm mt-2">
+                                Try {isPrecise ? "switching to broad search" : "a different search term"}.
+                              </p>
+                            </div>
+                          )
+                        )}
+                      </>
                     )}
                     <UserDetails 
                       user={selectedUser}
@@ -293,6 +380,19 @@ function App() {
                       onUserSelect={handleUserSelect}
                       userSource={userSource}
                     />
+                  </TabsContent>
+
+                  <TabsContent value="admin" className="mt-6">
+                    {isSetup === false ? (
+                      <FirstTimeSetup onSetupComplete={(key) => {
+                        setAdminKey(key);
+                        setIsSetup(true);
+                      }} />
+                    ) : adminKey ? (
+                      <DomainManager adminKey={adminKey} />
+                    ) : (
+                      <AdminAuth onAuth={setAdminKey} />
+                    )}
                   </TabsContent>
                 </Tabs>
               </div>

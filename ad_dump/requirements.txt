@@ -3,3 +3,4 @@ flask-caching
 python-ldap
 python-dotenv
 flask-cors
+cryptography

@@ -3,6 +3,8 @@ from flask_cors import CORS
 import ldap
 import os
 from dotenv import load_dotenv
+from .admin_routes import admin_bp
+from .database import get_db, decrypt_password, init_db
 
 load_dotenv()
 
@@ -11,14 +13,30 @@ CORS(app, resources={
     r"/search": {
         "origins": ["http://localhost:5173"],
         "methods": ["GET"],
-        "allow_headers": ["Content-Type"]
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": True
     },
     r"/groups/*": {
         "origins": ["http://localhost:5173"],
         "methods": ["GET"],
-        "allow_headers": ["Content-Type"]
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": True
+    },
+    r"/domains": {
+        "origins": ["http://localhost:5173"],
+        "methods": ["GET"],
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": True
+    },
+    r"/admin/*": {
+        "origins": ["http://localhost:5173"],
+        "methods": ["GET", "POST", "DELETE"],
+        "allow_headers": ["Content-Type", "X-Admin-Key"],
+        "supports_credentials": True
     }
 })
+
+app.register_blueprint(admin_bp, url_prefix='/admin')
 
 LDAP_SERVER = os.getenv("LDAP_SERVER")
 LDAP_USER = os.getenv("LDAP_USER")
@@ -34,16 +52,42 @@ def search():
     results = perform_search(search_query, search_type, is_precise)
     return jsonify(results)
 
-def get_ldap_connection():
+def get_ldap_connection(domain_id=None):
     try:
-        ldap_conn = ldap.initialize(LDAP_SERVER)
-        ldap_conn.set_option(ldap.OPT_REFERRALS, 0)
-        ldap_conn.simple_bind_s(LDAP_USER, LDAP_PASSWORD)
-        print("LDAP connection established")
-        return ldap_conn
-    except ldap.LDAPError as e:
-        print(f"LDAP Connection Error: {e}")
-        return None
+        with get_db() as db:
+            cursor = db.cursor()
+            if domain_id:
+                cursor.execute('''
+                    SELECT server, username, password, base_dn 
+                    FROM domains 
+                    WHERE id = ? AND is_active = 1
+                ''', (domain_id,))
+            else:
+                cursor.execute('''
+                    SELECT server, username, password, base_dn 
+                    FROM domains 
+                    WHERE is_active = 1 
+                    LIMIT 1
+                ''')
+            
+            domain = cursor.fetchone()
+            if not domain:
+                return None, None
+                
+            server, username, encrypted_password, base_dn = domain
+            password = decrypt_password(encrypted_password)
+            
+            try:
+                ldap_conn = ldap.initialize(server)
+                ldap_conn.set_option(ldap.OPT_REFERRALS, 0)
+                ldap_conn.simple_bind_s(username, password)
+                return ldap_conn, base_dn
+                
+            except ldap.INVALID_CREDENTIALS:
+                return None, None
+            
+    except Exception as e:
+        return None, None
 
 def close_ldap(ldap_conn):
     if ldap_conn:
@@ -118,11 +162,22 @@ def format_group(entry):
         print(f"Error formatting group: {e}")
         return None
 
-def search_ldap(ldap_conn, search_filter, attributes):
+def search_ldap(ldap_conn, search_filter, attributes, base_dn=None):
     try:
+        if not ldap_conn:
+            return {
+                "status": "error",
+                "results": None,
+                "error": "No LDAP connection"
+            }
+            
         ldap_conn.set_option(ldap.OPT_REFERRALS, 0)
         ldap_conn.set_option(ldap.OPT_SIZELIMIT, 1000)
-        results = ldap_conn.search_s(LDAP_BASE_DN, ldap.SCOPE_SUBTREE, search_filter, attributes)
+        
+        # Use the provided base_dn instead of environment variable
+        search_base = base_dn or LDAP_BASE_DN
+        
+        results = ldap_conn.search_s(search_base, ldap.SCOPE_SUBTREE, search_filter, attributes)
         return {
             "status": "success",
             "results": results,
@@ -158,12 +213,15 @@ def escape_ldap_filter(search_query):
     return ''.join(special_chars.get(char, char) for char in search_query)
 
 def perform_search(search_query, search_type, is_precise):
-    ldap_conn = get_ldap_connection()
-    if not ldap_conn:
+    # Get connection and base_dn
+    connection_info = get_ldap_connection()
+    if not connection_info or not connection_info[0]:
         return {"error": "Could not connect to LDAP server", "truncated": False}, 500
+        
+    ldap_conn, base_dn = connection_info  # Unpack the tuple
 
     escaped_query = escape_ldap_filter(search_query)
-    search_by = request.args.get('searchBy', '')  # Get the new searchBy parameter
+    search_by = request.args.get('searchBy', '')
     
     if search_type == 'users' and search_by == 'sAMAccountName':
         # Optimized path for sAMAccountName
@@ -174,7 +232,7 @@ def perform_search(search_query, search_type, is_precise):
                      'userPrincipalName', 'userAccountControl', 'lastLogon', 
                      'pwdLastSet', 'company', 'employeeID', 'employeeType']
         
-        search_results = search_ldap(ldap_conn, search_filter, attributes)
+        search_results = search_ldap(ldap_conn, search_filter, attributes, base_dn)
         close_ldap(ldap_conn)
 
         if search_results["status"] == "error":
@@ -217,7 +275,7 @@ def perform_search(search_query, search_type, is_precise):
                      'sAMAccountName', 'userPrincipalName', 'userAccountControl',
                      'lastLogon', 'pwdLastSet', 'company', 'employeeID', 'employeeType']
 
-    search_results = search_ldap(ldap_conn, search_filter, attributes)
+    search_results = search_ldap(ldap_conn, search_filter, attributes, base_dn)
     close_ldap(ldap_conn)
 
     if search_results["status"] == "error":
@@ -242,14 +300,15 @@ def teardown_ldap(exception):
 
 @app.route('/groups/<group_id>', methods=['GET'])
 def get_group_details(group_id):
-    ldap_conn = get_ldap_connection()
-    if not ldap_conn:
+    connection_info = get_ldap_connection()
+    if not connection_info or not connection_info[0]:
         return {"error": "Could not connect to LDAP server"}, 500
 
+    ldap_conn, base_dn = connection_info
     search_filter = f"(distinguishedName={escape_ldap_filter(group_id)})"
     attributes = ['name', 'description', 'groupType', 'member', 'managedBy', 'whenCreated', 'whenChanged']
     
-    ldap_results = search_ldap(ldap_conn, search_filter, attributes)
+    ldap_results = search_ldap(ldap_conn, search_filter, attributes, base_dn)
     close_ldap(ldap_conn)
 
     if ldap_results["status"] == "success" and ldap_results["results"]:
@@ -258,6 +317,14 @@ def get_group_details(group_id):
             return jsonify(group)
     
     return {"error": "Group not found"}, 404
+
+@app.route('/domains', methods=['GET'])
+def get_domains():
+    with get_db() as db:
+        cursor = db.cursor()
+        cursor.execute('SELECT id, name FROM domains WHERE is_active = 1')
+        domains = cursor.fetchall()
+        return jsonify([{'id': d[0], 'name': d[1]} for d in domains])
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001, host='0.0.0.0')

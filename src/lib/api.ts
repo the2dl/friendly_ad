@@ -22,7 +22,56 @@ interface SearchResponse<T> {
   truncated: boolean;
 }
 
-export async function searchUsers(query: string, precise: boolean): Promise<SearchResponse<User>> {
+export interface Domain {
+  id: number;
+  name: string;
+  server: string;
+  base_dn: string;
+  username: string;
+  is_active: boolean;
+}
+
+export interface NewDomain {
+  name: string;
+  server: string;
+  base_dn: string;
+  username: string;
+  password: string;
+}
+
+export async function getDomains(): Promise<Domain[]> {
+  const response = await fetch(`${API_BASE_URL}/domains`);
+  if (!response.ok) {
+    throw new ApiError(response.status, 'Failed to fetch domains');
+  }
+  return response.json();
+}
+
+export async function addDomain(domain: NewDomain, adminKey: string): Promise<Domain> {
+  const response = await fetch(`${API_BASE_URL}/admin/domains`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Key': adminKey
+    },
+    body: JSON.stringify(domain)
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new ApiError(401, 'Invalid admin key');
+    }
+    throw new ApiError(response.status, 'Failed to add domain');
+  }
+  
+  return response.json();
+}
+
+export async function searchUsers(
+  query: string, 
+  precise: boolean, 
+  domainId?: number
+): Promise<SearchResponse<User>> {
   try {
     const params = new URLSearchParams({
       query: query,
@@ -32,6 +81,10 @@ export async function searchUsers(query: string, precise: boolean): Promise<Sear
 
     if (precise && isSAMAccountName(query)) {
       params.set('searchBy', 'sAMAccountName');
+    }
+    
+    if (domainId) {
+      params.set('domain_id', domainId.toString());
     }
 
     const response = await fetch(`${API_BASE_URL}/search?${params.toString()}`);
@@ -48,8 +101,22 @@ export async function searchUsers(query: string, precise: boolean): Promise<Sear
   }
 }
 
-export async function searchGroups(query: string, precise: boolean): Promise<SearchResponse<Group>> {
-  const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}&type=groups&precise=${precise}`);
+export async function searchGroups(
+  query: string, 
+  precise: boolean,
+  domainId?: number
+): Promise<SearchResponse<Group>> {
+  const params = new URLSearchParams({
+    query: query,
+    type: 'groups',
+    precise: precise.toString()
+  });
+
+  if (domainId) {
+    params.set('domain_id', domainId.toString());
+  }
+
+  const response = await fetch(`${API_BASE_URL}/search?${params}`);
   if (!response.ok) {
     throw new Error('Failed to fetch groups');
   }
@@ -73,4 +140,46 @@ export async function getGroupDetails(groupId: string): Promise<Group> {
   const data = await response.json();
   console.log('API response:', data);
   return data;
-} 
+}
+
+export async function checkSetupStatus(): Promise<boolean> {
+  const response = await fetch(`${API_BASE_URL}/admin/setup-status`);
+  if (!response.ok) {
+    throw new ApiError(response.status, 'Failed to check setup status');
+  }
+  const data = await response.json();
+  return data.isSetup;
+}
+
+export async function setupAdmin(adminKey: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/admin/setup`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ adminKey }),
+  });
+
+  if (!response.ok) {
+    if (response.status === 400) {
+      throw new ApiError(400, 'Admin key already set');
+    }
+    throw new ApiError(response.status, 'Failed to set admin key');
+  }
+}
+
+export async function deleteDomain(domainId: number, adminKey: string): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/admin/domains/${domainId}`, {
+    method: 'DELETE',
+    headers: {
+      'X-Admin-Key': adminKey
+    }
+  });
+  
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new ApiError(401, 'Invalid admin key');
+    }
+    throw new ApiError(response.status, 'Failed to delete domain');
+  }
+}
