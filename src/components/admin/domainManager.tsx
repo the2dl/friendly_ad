@@ -154,22 +154,22 @@ export function DomainManager({ adminKey, onDomainChange }: DomainManagerProps) 
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Existing Domains List */}
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>Configured Domains</CardTitle>
+      <Card className="w-full">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl">Configured Domains</CardTitle>
           <CardDescription>Manage your existing domain connections</CardDescription>
         </CardHeader>
         <CardContent>
           {domains.length === 0 ? (
-            <div className="text-center text-muted-foreground py-4">
+            <div className="text-center text-muted-foreground py-8">
               No domains configured yet
             </div>
           ) : (
             <div className="space-y-4">
               {domains.map((domain) => (
-                <div key={domain.id} className="flex items-center justify-between p-4 border rounded-lg">
+                <div key={domain.id} className="flex items-center justify-between p-4 border rounded-lg bg-card hover:bg-secondary/50 transition-colors">
                   <div>
                     <h3 className="font-medium">{domain.name}</h3>
                     <p className="text-sm text-muted-foreground">{domain.server}</p>
@@ -197,10 +197,12 @@ export function DomainManager({ adminKey, onDomainChange }: DomainManagerProps) 
         </CardContent>
       </Card>
 
-      {/* Add New Domain Form */}
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>{editingDomainId ? "Edit Domain" : "Add New Domain"}</CardTitle>
+      {/* Add/Edit Domain Form */}
+      <Card className="w-full">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl">
+            {editingDomainId ? "Edit Domain" : "Add New Domain"}
+          </CardTitle>
           <CardDescription>
             {editingDomainId 
               ? "Update your Active Directory domain connection" 
@@ -230,6 +232,7 @@ export function DomainManager({ adminKey, onDomainChange }: DomainManagerProps) 
                 value={newDomain.name}
                 onChange={(e) => setNewDomain(prev => ({ ...prev, name: e.target.value }))}
                 required
+                className="h-12"
               />
             </div>
 
@@ -254,6 +257,7 @@ export function DomainManager({ adminKey, onDomainChange }: DomainManagerProps) 
                 value={newDomain.server}
                 onChange={(e) => setNewDomain(prev => ({ ...prev, server: e.target.value }))}
                 required
+                className="h-12"
               />
             </div>
 
@@ -278,6 +282,7 @@ export function DomainManager({ adminKey, onDomainChange }: DomainManagerProps) 
                 value={newDomain.base_dn}
                 onChange={(e) => setNewDomain(prev => ({ ...prev, base_dn: e.target.value }))}
                 required
+                className="h-12"
               />
             </div>
 
@@ -302,6 +307,7 @@ export function DomainManager({ adminKey, onDomainChange }: DomainManagerProps) 
                 value={newDomain.username}
                 onChange={(e) => setNewDomain(prev => ({ ...prev, username: e.target.value }))}
                 required
+                className="h-12"
               />
             </div>
 
@@ -327,11 +333,16 @@ export function DomainManager({ adminKey, onDomainChange }: DomainManagerProps) 
                 value={newDomain.password}
                 onChange={(e) => setNewDomain(prev => ({ ...prev, password: e.target.value }))}
                 required
+                className="h-12"
               />
             </div>
 
             <div className="flex gap-2">
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                className="h-12"
+              >
                 {isSubmitting 
                   ? (editingDomainId ? "Updating..." : "Adding...") 
                   : (editingDomainId ? "Update Domain" : "Add Domain")}
@@ -350,6 +361,7 @@ export function DomainManager({ adminKey, onDomainChange }: DomainManagerProps) 
                       password: ''
                     });
                   }}
+                  className="h-12"
                 >
                   Cancel
                 </Button>

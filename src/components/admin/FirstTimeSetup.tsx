@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { setupAdmin } from '@/lib/api';
 
@@ -43,27 +43,36 @@ export function FirstTimeSetup({ onSetupComplete }: FirstTimeSetupProps) {
   };
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>First Time Setup</CardTitle>
+    <Card className="w-full">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl">First Time Setup</CardTitle>
+        <CardDescription>
+          Create an admin key to manage your domain configurations
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            type="password"
-            placeholder="Create Admin Key"
-            value={adminKey}
-            onChange={(e) => setAdminKey(e.target.value)}
-            required
-          />
-          <Input
-            type="password"
-            placeholder="Confirm Admin Key"
-            value={confirmKey}
-            onChange={(e) => setConfirmKey(e.target.value)}
-            required
-          />
-          <Button type="submit">Set Admin Key</Button>
+          <div className="space-y-2">
+            <Input
+              type="password"
+              placeholder="Create Admin Key"
+              value={adminKey}
+              onChange={(e) => setAdminKey(e.target.value)}
+              className="h-12"
+              required
+            />
+            <Input
+              type="password"
+              placeholder="Confirm Admin Key"
+              value={confirmKey}
+              onChange={(e) => setConfirmKey(e.target.value)}
+              className="h-12"
+              required
+            />
+          </div>
+          <Button type="submit" className="w-full h-12">
+            Set Admin Key
+          </Button>
         </form>
       </CardContent>
     </Card>
