@@ -331,18 +331,20 @@ export function GroupDetails({
             <h4 className="text-sm font-semibold tracking-tight">Group Information</h4>
             <Separator />
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="flex items-center space-x-2">
-                <UserCircle className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">Owner: {group.owner || 'N/A'}</span>
+              <div className="flex items-start space-x-2">
+                <UserCircle className="h-4 w-4 text-muted-foreground shrink-0 mt-1" />
+                <span className="text-sm break-all">
+                  Owner: {group.owner || 'N/A'}
+                </span>
               </div>
               <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-sm">
                   Created: {group.created ? format(parseADTimestamp(group.created) || new Date(), 'PPpp') : 'Unknown'}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
-                <Info className="h-4 w-4 text-muted-foreground" />
+                <Info className="h-4 w-4 text-muted-foreground shrink-0" />
                 <span className="text-sm">
                   Last Modified: {group.lastModified ? format(parseADTimestamp(group.lastModified) || new Date(), 'PPpp') : 'Unknown'}
                 </span>
