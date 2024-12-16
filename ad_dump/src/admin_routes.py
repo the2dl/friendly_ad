@@ -18,7 +18,11 @@ def require_admin_key(f):
             cursor.execute('SELECT value FROM settings WHERE key = "admin_key"')
             result = cursor.fetchone()
             
-            if not result or auth_header != result[0]:
+            if not result:
+                return jsonify({"error": "Admin key not set"}), 401
+                
+            stored_key = decrypt_password(result[0])
+            if auth_header != stored_key:
                 return jsonify({"error": "Unauthorized"}), 401
                 
         return f(*args, **kwargs)
@@ -83,9 +87,10 @@ def initial_setup():
         if cursor.fetchone():
             return jsonify({"error": "Admin key already set"}), 400
             
-        # Set the initial admin key
+        # Encrypt the admin key before storing
+        encrypted_key = encrypt_password(data['adminKey'])
         cursor.execute('INSERT INTO settings (key, value) VALUES (?, ?)', 
-                      ('admin_key', data['adminKey']))
+                      ('admin_key', encrypted_key))
         db.commit()
         
     return jsonify({"message": "Admin key set successfully"}), 201

@@ -3,16 +3,23 @@ import sqlite3
 from contextlib import contextmanager
 import os
 from cryptography.fernet import Fernet
+from dotenv import load_dotenv
 
-# Create a secure key for encryption
-KEY_FILE = "secret.key"
-if not os.path.exists(KEY_FILE):
-    with open(KEY_FILE, "wb") as key_file:
-        key_file.write(Fernet.generate_key())
+load_dotenv()
 
-with open(KEY_FILE, "rb") as key_file:
-    KEY = key_file.read()
-    
+# Get key from environment variable
+KEY = os.getenv('ENCRYPTION_KEY')
+if not KEY:
+    # Generate a new key if not present
+    KEY = Fernet.generate_key().decode()
+    print(f"Generated new encryption key: {KEY}")
+    print("Add this to your .env file as ENCRYPTION_KEY=<the_key>")
+    exit(1)
+
+# Convert string key back to bytes if needed
+if isinstance(KEY, str):
+    KEY = KEY.encode()
+
 cipher_suite = Fernet(KEY)
 
 @contextmanager
