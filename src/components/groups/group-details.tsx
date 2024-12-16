@@ -287,7 +287,7 @@ export function GroupDetails({
 
           {/* Group Header */}
           <div className="flex flex-col md:flex-row gap-4">
-            <div className="p-4 bg-secondary rounded-lg shrink-0">
+            <div className="p-4 bg-secondary rounded-lg shrink-0 w-[72px] h-[72px] flex items-center justify-center">
               <UsersRound className="h-10 w-10" />
             </div>
             <div className="flex-1 min-w-0">
