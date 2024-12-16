@@ -20,9 +20,12 @@ import {
   Info,
   ChevronRight,
   UsersRound,
+  Share2,
 } from 'lucide-react';
 import { getGroupDetails, searchGroupMembers } from '@/lib/api';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { generateShareableLink } from '@/lib/utils';
+import { useToast } from "@/hooks/use-toast";
 
 interface GroupDetailsProps {
   group: Group | null;
@@ -119,6 +122,7 @@ export function GroupDetails({
   const [members, setMembers] = useState<User[]>([]);
   const [showMembers, setShowMembers] = useState(false);
   const [isResultsTruncated, setIsResultsTruncated] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     setGroup(initialGroup);
@@ -156,6 +160,26 @@ export function GroupDetails({
   const handleMemberClick = (member: User) => {
     console.log('Member clicked:', member.name);
     handleUserSelect(member);
+  };
+
+  const handleShare = async () => {
+    if (!group) return;
+    
+    const link = generateShareableLink('group', group.id);
+    
+    try {
+      await navigator.clipboard.writeText(link);
+      toast({
+        title: "Link copied",
+        description: "You can now share this link with others",
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Failed to copy",
+        description: "Please try again",
+      });
+    }
   };
 
   if (!group) return null;
@@ -262,7 +286,7 @@ export function GroupDetails({
           {renderBreadcrumbs()}
 
           {/* Group Header */}
-          <div className="flex items-start space-x-4">
+          <div className="flex justify-between items-start">
             <div className="p-4 bg-secondary rounded-lg">
               <UsersRound className="h-10 w-10" />
             </div>
@@ -280,6 +304,15 @@ export function GroupDetails({
                 {group.type}
               </Badge>
             </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleShare}
+              className="ml-4"
+              title="Share group link"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
           </div>
         </DialogHeader>
 

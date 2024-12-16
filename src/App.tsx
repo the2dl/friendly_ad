@@ -20,6 +20,12 @@ import { FirstTimeSetup } from '@/components/admin/FirstTimeSetup';
 import { Toaster } from "@/components/ui/toaster";
 import { FeatureCards } from '@/components/feature-cards';
 
+function extractUserNameFromDN(dn: string): string {
+  // Extract the CN part and remove the CN= prefix
+  const cnMatch = dn.match(/CN=([^,]+)/);
+  return cnMatch ? cnMatch[1] : dn;
+}
+
 function App() {
   const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,6 +85,82 @@ function App() {
     };
     checkSetup();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const type = params.get('type');
+    const id = params.get('id');
+
+    console.log('URL Parameters:', { type, id });
+
+    if (type && id) {
+      setIsLoading(true);
+      
+      const decodedId = decodeURIComponent(id);
+      console.log('Attempting to search with decodedId:', decodedId);
+      
+      if (type === 'user') {
+        const searchTerm = extractUserNameFromDN(decodedId);
+        console.log('Searching with extracted name:', searchTerm);
+        
+        searchUsers(searchTerm, true)
+          .then(response => {
+            console.log('Search response:', response);
+            if (response.data.length > 0) {
+              setSelectedUser(response.data[0]);
+              setActiveTab('users');
+            } else {
+              console.log('No user found with name:', searchTerm);
+              toast({
+                variant: "destructive",
+                title: "Not Found",
+                description: "User not found",
+              });
+            }
+          })
+          .catch(error => {
+            console.error('Failed to load shared user:', error);
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Failed to load shared user",
+            });
+          })
+          .finally(() => setIsLoading(false));
+      } else if (type === 'group') {
+        const searchTerm = extractUserNameFromDN(decodedId);
+        console.log('Searching for group with name:', searchTerm);
+        
+        searchGroups(searchTerm, true)
+          .then(response => {
+            console.log('Group search response:', response);
+            if (response.data.length > 0) {
+              setSelectedGroup(response.data[0]);
+              setActiveTab('groups');
+            } else {
+              console.log('No group found with name:', searchTerm);
+              toast({
+                variant: "destructive",
+                title: "Not Found",
+                description: "Group not found",
+              });
+            }
+          })
+          .catch(error => {
+            console.error('Failed to load shared group:', error);
+            toast({
+              variant: "destructive",
+              title: "Error",
+              description: "Failed to load shared group",
+            });
+          })
+          .finally(() => setIsLoading(false));
+      }
+      
+      // Clear the URL parameters
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []); // Run once on component mount
 
   const handleSearch = async () => {
     if (!searchQuery) {
@@ -429,9 +511,9 @@ function App() {
                 <div className="p-3 bg-primary/10 rounded-lg w-fit mb-4">
                   <UsersRound className="h-6 w-6 text-primary" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Group Management</h3>
+                <h3 className="text-xl font-semibold mb-2">Group Insights</h3>
                 <p className="text-muted-foreground">
-                  Explore and manage group hierarchies and memberships
+                  Explore group hierarchies and memberships
                 </p>
               </div>
             </div>

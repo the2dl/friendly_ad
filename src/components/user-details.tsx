@@ -22,13 +22,15 @@ import {
   Key,
   Hash,
   AtSign,
-  ChevronRight
+  ChevronRight,
+  Share2
 } from 'lucide-react';
 import { searchGroupMembers } from '@/lib/api';
 import { User } from '@/types/user';
-import { toast } from "sonner"
+import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button";
 import { Group } from '@/types/group';
+import { generateShareableLink } from '@/lib/utils';
 
 interface UserDetailsProps {
   user: User | null;
@@ -126,8 +128,29 @@ export function UserDetails({
   onReturnToGroup 
 }: UserDetailsProps) {
   const [groupView, setGroupView] = useState<{ name: string; users: User[] } | null>(null);
+  const { toast } = useToast();
   
   if (!user) return null;
+
+  const handleShare = async () => {
+    if (!user) return;
+    
+    const link = generateShareableLink('user', user.id);
+    
+    try {
+      await navigator.clipboard.writeText(link);
+      toast({
+        title: "Link copied",
+        description: "You can now share this link with others",
+      });
+    } catch (err) {
+      toast({
+        variant: "destructive",
+        title: "Failed to copy",
+        description: "Please try again",
+      });
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -151,12 +174,7 @@ export function UserDetails({
           )}
 
           {/* User Header */}
-          <div className="flex items-start space-x-4">
-            <Avatar className="h-20 w-20">
-              <AvatarFallback className="text-xl">
-                {user.name?.slice(0, 2).toUpperCase() || 'N/A'}
-              </AvatarFallback>
-            </Avatar>
+          <div className="flex justify-between items-start">
             <div className="space-y-1">
               <DialogTitle className="text-2xl font-bold tracking-tight">
                 {user.name || 'N/A'}
@@ -166,6 +184,15 @@ export function UserDetails({
                 {user.enabled ? 'Enabled' : 'Disabled'}
               </Badge>
             </div>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleShare}
+              className="ml-4"
+              title="Share user link"
+            >
+              <Share2 className="h-4 w-4" />
+            </Button>
           </div>
         </DialogHeader>
 
@@ -178,11 +205,11 @@ export function UserDetails({
               <div className="space-y-4">
                 <div className="flex items-center space-x-2">
                   <UserIcon className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Username: {user.samAccountName || 'N/A'}</span>
+                  <span className="text-sm">{user.samAccountName || 'N/A'}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <AtSign className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">UPN: {user.userPrincipalName || 'N/A'}</span>
+                  <span className="text-sm">{user.userPrincipalName || 'N/A'}</span>
                 </div>
               </div>
               {(user.employeeID || user.company) && (
@@ -190,13 +217,13 @@ export function UserDetails({
                   {user.employeeID && (
                     <div className="flex items-center space-x-2">
                       <Hash className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Employee ID: {user.employeeID}</span>
+                      <span className="text-sm">{user.employeeID}</span>
                     </div>
                   )}
                   {user.company && (
                     <div className="flex items-center space-x-2">
                       <Building2 className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm">Company: {user.company}</span>
+                      <span className="text-sm">{user.company}</span>
                     </div>
                   )}
                 </div>
