@@ -29,7 +29,7 @@ export function SearchBar({
   return (
     <div className="relative w-full flex gap-2 items-center">
       <div className="relative flex-1">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
         <Input
           placeholder={placeholder}
           value={value}
@@ -45,7 +45,12 @@ export function SearchBar({
               onSearch();
             }
           }}
-          className={`w-full pl-14 pr-6 text-lg rounded-full ${className}`}
+          className={cn(
+            "w-full pl-11 pr-4 text-base",
+            "bg-background border-input",
+            "focus-visible:ring-1 focus-visible:ring-ring",
+            className
+          )}
         />
       </div>
       <Toggle

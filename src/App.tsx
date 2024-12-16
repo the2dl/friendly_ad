@@ -231,197 +231,203 @@ function App() {
               </div>
             </div>
 
-            <div className="mt-8 p-6 rounded-lg border bg-card">
-              <div className="max-w-2xl mx-auto">
+            <div className="mt-8">
+              <div className="w-full max-w-[1400px] mx-auto">
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList className="grid w-full grid-cols-3 mb-4">
-                    <TabsTrigger value="users" className="flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Users
-                    </TabsTrigger>
-                    <TabsTrigger value="groups" className="flex items-center gap-2">
-                      <UsersRound className="h-4 w-4" />
-                      Groups
-                    </TabsTrigger>
-                    <TabsTrigger value="admin" className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      Admin
-                    </TabsTrigger>
-                  </TabsList>
+                  <div className="bg-card border rounded-lg p-6 mb-6">
+                    <TabsList className="grid w-full grid-cols-3 mb-4">
+                      <TabsTrigger value="users" className="flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Users
+                      </TabsTrigger>
+                      <TabsTrigger value="groups" className="flex items-center gap-2">
+                        <UsersRound className="h-4 w-4" />
+                        Groups
+                      </TabsTrigger>
+                      <TabsTrigger value="admin" className="flex items-center gap-2">
+                        <Settings className="h-4 w-4" />
+                        Admin
+                      </TabsTrigger>
+                    </TabsList>
+                  </div>
 
-                  <div className="flex gap-4 items-center mb-4">
-                    <Select
-                      value={selectedDomainId?.toString()}
-                      onValueChange={(value) => setSelectedDomainId(Number(value))}
-                    >
-                      <SelectTrigger className="w-[200px]">
-                        <SelectValue placeholder={domains.length === 0 ? "No domains configured" : "Select Domain"} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {domains.length === 0 ? (
-                          <SelectItem value="none" disabled>
-                            No domains configured
-                          </SelectItem>
-                        ) : (
-                          domains.map((domain) => (
-                            <SelectItem key={domain.id} value={domain.id.toString()}>
-                              {domain.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                    <div className="flex-1 max-w-3xl mx-auto flex gap-3">
-                      <SearchBar
-                        value={searchQuery}
-                        onChange={setSearchQuery}
-                        onSearch={handleSearch}
-                        placeholder={`Search ${activeTab}...`}
-                        className="flex-1 h-12 text-lg"
-                        isPrecise={isPrecise}
-                        onPreciseChange={setIsPrecise}
-                      />
-                      <Button 
-                        onClick={handleSearch}
-                        disabled={isLoading || !selectedDomainId}
-                        size="lg"
-                        className="h-12 px-8 text-lg"
+                  <div className="mb-6">
+                    <div className="flex gap-4 items-center">
+                      <Select
+                        value={selectedDomainId?.toString()}
+                        onValueChange={(value) => setSelectedDomainId(Number(value))}
                       >
-                        {isLoading ? (
-                          "Searching..."
-                        ) : !selectedDomainId ? (
-                          "Select a domain"
-                        ) : (
-                          <>
-                            <Search className="h-5 w-5 mr-2" />
-                            Search
-                          </>
-                        )}
-                      </Button>
+                        <SelectTrigger className="w-[200px]">
+                          <SelectValue placeholder={domains.length === 0 ? "No domains configured" : "Select Domain"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {domains.length === 0 ? (
+                            <SelectItem value="none" disabled>
+                              No domains configured
+                            </SelectItem>
+                          ) : (
+                            domains.map((domain) => (
+                              <SelectItem key={domain.id} value={domain.id.toString()}>
+                                {domain.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex-1 flex gap-3">
+                        <SearchBar
+                          value={searchQuery}
+                          onChange={setSearchQuery}
+                          onSearch={handleSearch}
+                          placeholder={`Search ${activeTab}...`}
+                          className="flex-1 h-12 text-lg"
+                          isPrecise={isPrecise}
+                          onPreciseChange={setIsPrecise}
+                        />
+                        <Button 
+                          onClick={handleSearch}
+                          disabled={isLoading || !selectedDomainId}
+                          size="lg"
+                          className="h-12 px-8 text-lg"
+                        >
+                          {isLoading ? (
+                            "Searching..."
+                          ) : !selectedDomainId ? (
+                            "Select a domain"
+                          ) : (
+                            <>
+                              <Search className="h-5 w-5 mr-2" />
+                              Search
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
-                  <TabsContent value="users" className="mt-6">
-                    {isLoading ? (
-                      <div className="text-center py-8">
-                        <p>Loading...</p>
-                      </div>
-                    ) : error ? (
-                      <div className="text-center py-8 text-red-500">
-                        <p>{error}</p>
-                      </div>
-                    ) : (
-                      <>
-                        {(users?.length ?? 0) > 0 ? (
-                          <UserGrid 
-                            users={users} 
-                            onUserSelect={user => handleUserSelect(user)} 
-                          />
-                        ) : (
-                          hasSearched && searchQuery && !isLoading && (
-                            <div className="text-center py-8 text-muted-foreground">
-                              <p>No users found{isPrecise ? " (using precise match)" : ""}.</p>
-                              <p className="text-sm mt-2">
-                                Try {isPrecise ? "switching to broad search" : "a different search term"}.
-                              </p>
-                            </div>
-                          )
-                        )}
-                      </>
-                    )}
-                    <UserDetails 
-                      user={selectedUser}
-                      open={!!selectedUser}
-                      onClose={() => {
-                        console.log('App: closing user details');
-                        const previous = navigationStack[navigationStack.length - 1];
-                        if (previous) {
-                          setNavigationStack(prev => prev.slice(0, -1));
-                          if (previous.type === 'group') {
-                            setSelectedUser(null);
-                            setSelectedGroup(previous.item as Group);
-                          } else {
-                            setSelectedGroup(null);
-                            setSelectedUser(previous.item as User);
-                          }
-                        } else {
-                          setSelectedUser(null);
-                        }
-                      }}
-                      source={navigationStack.length > 0 ? 
-                        { type: 'group', group: navigationStack[navigationStack.length - 1].item as Group } : 
-                        null
-                      }
-                      setUsers={setUsers}
-                      setSelectedUser={setSelectedUser}
-                      onReturnToGroup={(group) => {
-                        setSelectedUser(null);
-                        setSelectedGroup(group);
-                      }}
-                    />
-                    <GroupDetails
-                      group={selectedGroup}
-                      open={!!selectedGroup}
-                      onClose={() => {
-                        const previous = navigationStack[navigationStack.length - 1];
-                        if (previous) {
-                          setNavigationStack(prev => prev.slice(0, -1));
-                          if (previous.type === 'user') {
-                            setSelectedGroup(null);
-                            setSelectedUser(previous.item as User);
-                          } else {
-                            setSelectedUser(null);
-                            setSelectedGroup(previous.item as Group);
-                          }
-                        } else {
-                          setSelectedGroup(null);
-                        }
-                      }}
-                      source={navigationStack.length > 0 ? 
-                        { type: 'user', user: navigationStack[navigationStack.length - 1].item as User } : 
-                        null
-                      }
-                      onUserSelect={handleUserSelect}
-                      userSource={userSource}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="groups" className="mt-6">
-                    {groups.length > 0 ? (
-                      <GroupGrid groups={filteredGroups} onGroupSelect={setSelectedGroup} />
-                    ) : (
-                      hasSearched && searchQuery && !isLoading && (
-                        <div className="text-center py-8 text-muted-foreground">
-                          <p>No groups found{isPrecise ? " (using precise match)" : ""}.</p>
-                          <p className="text-sm mt-2">Try {isPrecise ? "switching to broad search" : "a different search term"}.</p>
+                  <div className="bg-card/50 border rounded-lg p-6">
+                    <TabsContent value="users" className="mt-6">
+                      {isLoading ? (
+                        <div className="text-center py-8">
+                          <p>Loading...</p>
                         </div>
-                      )
-                    )}
-                    <GroupDetails
-                      group={selectedGroup}
-                      open={!!selectedGroup}
-                      onClose={() => setSelectedGroup(null)}
-                      source={selectedUser ? { type: 'user', user: selectedUser } : null}
-                      onUserSelect={handleUserSelect}
-                      userSource={userSource}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="admin" className="mt-6">
-                    {isSetup === false ? (
-                      <FirstTimeSetup onSetupComplete={(key) => {
-                        setAdminKey(key);
-                        setIsSetup(true);
-                      }} />
-                    ) : adminKey ? (
-                      <DomainManager 
-                        adminKey={adminKey} 
-                        onDomainChange={refreshDomains} 
+                      ) : error ? (
+                        <div className="text-center py-8 text-red-500">
+                          <p>{error}</p>
+                        </div>
+                      ) : (
+                        <>
+                          {(users?.length ?? 0) > 0 ? (
+                            <UserGrid 
+                              users={users} 
+                              onUserSelect={user => handleUserSelect(user)} 
+                            />
+                          ) : (
+                            hasSearched && searchQuery && !isLoading && (
+                              <div className="text-center py-8 text-muted-foreground">
+                                <p>No users found{isPrecise ? " (using precise match)" : ""}.</p>
+                                <p className="text-sm mt-2">
+                                  Try {isPrecise ? "switching to broad search" : "a different search term"}.
+                                </p>
+                              </div>
+                            )
+                          )}
+                        </>
+                      )}
+                      <UserDetails 
+                        user={selectedUser}
+                        open={!!selectedUser}
+                        onClose={() => {
+                          console.log('App: closing user details');
+                          const previous = navigationStack[navigationStack.length - 1];
+                          if (previous) {
+                            setNavigationStack(prev => prev.slice(0, -1));
+                            if (previous.type === 'group') {
+                              setSelectedUser(null);
+                              setSelectedGroup(previous.item as Group);
+                            } else {
+                              setSelectedGroup(null);
+                              setSelectedUser(previous.item as User);
+                            }
+                          } else {
+                            setSelectedUser(null);
+                          }
+                        }}
+                        source={navigationStack.length > 0 ? 
+                          { type: 'group', group: navigationStack[navigationStack.length - 1].item as Group } : 
+                          null
+                        }
+                        setUsers={setUsers}
+                        setSelectedUser={setSelectedUser}
+                        onReturnToGroup={(group) => {
+                          setSelectedUser(null);
+                          setSelectedGroup(group);
+                        }}
                       />
-                    ) : (
-                      <AdminAuth onAuth={setAdminKey} />
-                    )}
-                  </TabsContent>
+                      <GroupDetails
+                        group={selectedGroup}
+                        open={!!selectedGroup}
+                        onClose={() => {
+                          const previous = navigationStack[navigationStack.length - 1];
+                          if (previous) {
+                            setNavigationStack(prev => prev.slice(0, -1));
+                            if (previous.type === 'user') {
+                              setSelectedGroup(null);
+                              setSelectedUser(previous.item as User);
+                            } else {
+                              setSelectedUser(null);
+                              setSelectedGroup(previous.item as Group);
+                            }
+                          } else {
+                            setSelectedGroup(null);
+                          }
+                        }}
+                        source={navigationStack.length > 0 ? 
+                          { type: 'user', user: navigationStack[navigationStack.length - 1].item as User } : 
+                          null
+                        }
+                        onUserSelect={handleUserSelect}
+                        userSource={userSource}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="groups" className="mt-6">
+                      {groups.length > 0 ? (
+                        <GroupGrid groups={filteredGroups} onGroupSelect={setSelectedGroup} />
+                      ) : (
+                        hasSearched && searchQuery && !isLoading && (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <p>No groups found{isPrecise ? " (using precise match)" : ""}.</p>
+                            <p className="text-sm mt-2">Try {isPrecise ? "switching to broad search" : "a different search term"}.</p>
+                          </div>
+                        )
+                      )}
+                      <GroupDetails
+                        group={selectedGroup}
+                        open={!!selectedGroup}
+                        onClose={() => setSelectedGroup(null)}
+                        source={selectedUser ? { type: 'user', user: selectedUser } : null}
+                        onUserSelect={handleUserSelect}
+                        userSource={userSource}
+                      />
+                    </TabsContent>
+
+                    <TabsContent value="admin" className="mt-6">
+                      {isSetup === false ? (
+                        <FirstTimeSetup onSetupComplete={(key) => {
+                          setAdminKey(key);
+                          setIsSetup(true);
+                        }} />
+                      ) : adminKey ? (
+                        <DomainManager 
+                          adminKey={adminKey} 
+                          onDomainChange={refreshDomains} 
+                        />
+                      ) : (
+                        <AdminAuth onAuth={setAdminKey} />
+                      )}
+                    </TabsContent>
+                  </div>
                 </Tabs>
               </div>
             </div>
