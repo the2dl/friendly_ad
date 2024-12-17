@@ -160,7 +160,10 @@ export function GroupDetails({
         })
         .then(response => {
           if (response) {
-            setMembers(response.data || []);
+            const validMembers = (response.data || []).filter(
+              member => member.name && member.name !== 'N/A'
+            );
+            setMembers(validMembers);
             setIsLoadingMembers(false);
             setLoadingProgress(null);
           }
@@ -210,10 +213,11 @@ export function GroupDetails({
   };
 
   const exportMembers = () => {
+    const validMembers = members.filter(member => member.name && member.name !== 'N/A');
     const headers = ['Name', 'Email'];
     const csvContent = [
       headers,
-      ...members.map(member => [
+      ...validMembers.map(member => [
         member.name || 'N/A',
         member.email || 'N/A'
       ])
