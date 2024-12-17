@@ -57,6 +57,8 @@ interface MembersViewProps {
 }
 
 function MembersView({ groupName, members, onBack, onClose, onUserSelect }: MembersViewProps) {
+  const validMembers = members.filter(member => member.name);
+  
   const handleMemberClick = (member: User) => {
     onUserSelect(member);
   };
@@ -65,24 +67,26 @@ function MembersView({ groupName, members, onBack, onClose, onUserSelect }: Memb
     <DialogContent className="max-w-[800px] max-h-[80vh] overflow-y-auto">
       <DialogHeader className="space-y-4">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" onClick={onBack} className="hover:bg-secondary/80">
+          <Button 
+            variant="ghost" 
+            onClick={onBack}
+            className="hover:bg-secondary/80 -ml-2"
+          >
             Back to Group
           </Button>
           <ChevronRight className="h-4 w-4" />
-          <DialogTitle className="text-lg font-semibold">
-            {groupName} Members
-          </DialogTitle>
+          <span className="font-semibold">{groupName} Members</span>
         </div>
-        <DialogDescription className="text-sm text-muted-foreground">
-          Showing {members.length} members
-        </DialogDescription>
+        <p className="text-sm text-muted-foreground">
+          Showing {validMembers.length} members
+        </p>
       </DialogHeader>
 
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {members.map((member) => (
+        {validMembers.map((member) => (
           <div
             key={member.id}
-            className="p-4 rounded-lg border bg-card text-card-foreground shadow-sm hover:bg-secondary/80 cursor-pointer transition-colors"
+            className="p-4 rounded-lg border bg-card hover:bg-secondary/80 cursor-pointer transition-colors"
             onClick={() => handleMemberClick(member)}
             role="button"
             tabIndex={0}
@@ -443,7 +447,7 @@ export function GroupDetails({
                   </>
                 )}
                 <Badge variant="secondary">
-                  {isLoadingMembers ? "Loading..." : `${members.length} total`}
+                  {isLoadingMembers ? "Loading..." : `${members.filter(m => m.name).length} total`}
                 </Badge>
               </div>
             </div>
@@ -454,25 +458,28 @@ export function GroupDetails({
               ) : members.length > 0 ? (
                 viewMode === 'grid' ? (
                   <div className="flex flex-wrap gap-3">
-                    {members.slice(0, 3).map((member) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center space-x-2 p-3 rounded-lg border bg-card hover:bg-secondary/80 cursor-pointer transition-colors"
-                        onClick={() => handleMemberClick(member)}
-                      >
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback>{member.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-medium">{member.name}</span>
-                      </div>
-                    ))}
-                    {members.length > 3 && (
+                    {members
+                      .filter(member => member.name && member.name !== 'N/A')  // Filter out N/A and null names
+                      .slice(0, 3)
+                      .map((member) => (
+                        <div
+                          key={member.id}
+                          className="flex items-center space-x-2 p-3 rounded-lg border bg-card hover:bg-secondary/80 cursor-pointer transition-colors"
+                          onClick={() => handleMemberClick(member)}
+                        >
+                          <Avatar className="h-8 w-8">
+                            <AvatarFallback>{member.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm font-medium">{member.name}</span>
+                        </div>
+                      ))}
+                    {members.filter(m => m.name).length > 3 && (
                       <Button
                         variant="outline"
                         onClick={() => setShowMembers(true)}
                         className="h-[3.75rem]"
                       >
-                        +{members.length - 3} more
+                        +{members.filter(m => m.name).length - 3} more
                       </Button>
                     )}
                   </div>
@@ -486,24 +493,27 @@ export function GroupDetails({
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {members.slice(0, 5).map((member) => (
-                          <TableRow
-                            key={member.id}
-                            className="cursor-pointer hover:bg-secondary/80"
-                            onClick={() => handleMemberClick(member)}
-                          >
-                            <TableCell className="font-medium">{member.name}</TableCell>
-                            <TableCell>{member.email || 'N/A'}</TableCell>
-                          </TableRow>
-                        ))}
-                        {members.length > 5 && (
+                        {members
+                          .filter(member => member.name)  // Only show members with valid names
+                          .slice(0, 5)
+                          .map((member) => (
+                            <TableRow
+                              key={member.id}
+                              className="cursor-pointer hover:bg-secondary/80"
+                              onClick={() => handleMemberClick(member)}
+                            >
+                              <TableCell className="font-medium">{member.name}</TableCell>
+                              <TableCell>{member.email || 'N/A'}</TableCell>
+                            </TableRow>
+                          ))}
+                        {members.filter(m => m.name).length > 5 && (
                           <TableRow>
                             <TableCell colSpan={2} className="text-center">
                               <Button
                                 variant="ghost"
                                 onClick={() => setShowMembers(true)}
                               >
-                                View all {members.length} members
+                                View all {members.filter(m => m.name).length} members
                               </Button>
                             </TableCell>
                           </TableRow>
