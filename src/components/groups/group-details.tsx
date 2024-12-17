@@ -21,11 +21,22 @@ import {
   ChevronRight,
   UsersRound,
   Share2,
+  LayoutGrid,
+  LayoutList,
+  Download,
 } from 'lucide-react';
 import { getGroupDetails, searchGroupMembers } from '@/lib/api';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { generateShareableLink } from '@/lib/utils';
 import { useToast } from "@/hooks/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface GroupDetailsProps {
   group: Group | null;
@@ -123,6 +134,7 @@ export function GroupDetails({
   const [showMembers, setShowMembers] = useState(false);
   const [isResultsTruncated, setIsResultsTruncated] = useState(false);
   const { toast } = useToast();
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   useEffect(() => {
     setGroup(initialGroup);
@@ -180,6 +192,28 @@ export function GroupDetails({
         description: "Please try again",
       });
     }
+  };
+
+  const exportMembers = () => {
+    const headers = ['Name', 'Email'];
+    const csvContent = [
+      headers,
+      ...members.map(member => [
+        member.name || 'N/A',
+        member.email || 'N/A'
+      ])
+    ]
+    .map(row => row.join(','))
+    .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${group?.name || 'group'}-members.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   if (!group) return null;
@@ -358,34 +392,100 @@ export function GroupDetails({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold tracking-tight">Members</h4>
-              <Badge variant="secondary">{members.length} total</Badge>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportMembers}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+                <div className="flex items-center border rounded-md">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`px-2 ${viewMode === 'grid' ? 'bg-secondary' : ''}`}
+                    onClick={() => setViewMode('grid')}
+                  >
+                    <LayoutGrid className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`px-2 ${viewMode === 'table' ? 'bg-secondary' : ''}`}
+                    onClick={() => setViewMode('table')}
+                  >
+                    <LayoutList className="h-4 w-4" />
+                  </Button>
+                </div>
+                <Badge variant="secondary">{members.length} total</Badge>
+              </div>
             </div>
             <Separator />
             <div className="space-y-4">
               {members.length > 0 ? (
-                <div className="flex flex-wrap gap-3">
-                  {members.slice(0, 3).map((member) => (
-                    <div
-                      key={member.id}
-                      className="flex items-center space-x-2 p-3 rounded-lg border bg-card hover:bg-secondary/80 cursor-pointer transition-colors"
-                      onClick={() => handleMemberClick(member)}
-                    >
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback>{member.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-medium">{member.name}</span>
-                    </div>
-                  ))}
-                  {members.length > 3 && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowMembers(true)}
-                      className="h-[3.75rem]"
-                    >
-                      +{members.length - 3} more
-                    </Button>
-                  )}
-                </div>
+                viewMode === 'grid' ? (
+                  <div className="flex flex-wrap gap-3">
+                    {members.slice(0, 3).map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center space-x-2 p-3 rounded-lg border bg-card hover:bg-secondary/80 cursor-pointer transition-colors"
+                        onClick={() => handleMemberClick(member)}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>{member.name?.slice(0, 2).toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-medium">{member.name}</span>
+                      </div>
+                    ))}
+                    {members.length > 3 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowMembers(true)}
+                        className="h-[3.75rem]"
+                      >
+                        +{members.length - 3} more
+                      </Button>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Email</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {members.slice(0, 5).map((member) => (
+                          <TableRow
+                            key={member.id}
+                            className="cursor-pointer hover:bg-secondary/80"
+                            onClick={() => handleMemberClick(member)}
+                          >
+                            <TableCell className="font-medium">{member.name}</TableCell>
+                            <TableCell>{member.email || 'N/A'}</TableCell>
+                          </TableRow>
+                        ))}
+                        {members.length > 5 && (
+                          <TableRow>
+                            <TableCell colSpan={2} className="text-center">
+                              <Button
+                                variant="ghost"
+                                onClick={() => setShowMembers(true)}
+                              >
+                                View all {members.length} members
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )
               ) : (
                 <p className="text-sm text-muted-foreground">No members found</p>
               )}
