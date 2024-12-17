@@ -19,6 +19,7 @@ function isSAMAccountName(query: string): boolean {
 
 interface SearchResponse<T> {
   data: T[];
+  total_count?: number;
   truncated: boolean;
 }
 
@@ -126,22 +127,39 @@ export async function searchGroups(
 }
 
 export async function searchGroupMembers(groupDN: string): Promise<SearchResponse<User>> {
-  const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(groupDN)}&type=group_members`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch group members');
+  try {
+    const response = await fetch(`${API_BASE_URL}/groups/${encodeURIComponent(groupDN)}/members`);
+    if (!response.ok) {
+      throw new ApiError(response.status, 'Failed to fetch group members');
+    }
+    const data = await response.json();
+    return {
+      data: data.data,
+      total_count: data.total_count,
+      truncated: false // We're now handling pagination server-side
+    };
+  } catch (err) {
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      throw new ApiError(undefined, 'Connection failed');
+    }
+    throw err;
   }
-  return response.json();
 }
 
 export async function getGroupDetails(groupId: string): Promise<Group> {
-  console.log('Fetching group details for ID:', groupId);
-  const response = await fetch(`${API_BASE_URL}/groups/${encodeURIComponent(groupId)}`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch group details');
+  try {
+    const response = await fetch(`${API_BASE_URL}/groups/${encodeURIComponent(groupId)}`);
+    if (!response.ok) {
+      throw new ApiError(response.status, 'Failed to fetch group details');
+    }
+    const data = await response.json();
+    return data;
+  } catch (err) {
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      throw new ApiError(undefined, 'Connection failed');
+    }
+    throw err;
   }
-  const data = await response.json();
-  console.log('API response:', data);
-  return data;
 }
 
 export async function checkSetupStatus(): Promise<boolean> {

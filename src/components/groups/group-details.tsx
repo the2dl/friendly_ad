@@ -135,6 +135,8 @@ export function GroupDetails({
   const [isResultsTruncated, setIsResultsTruncated] = useState(false);
   const { toast } = useToast();
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState<string | null>(null);
 
   useEffect(() => {
     setGroup(initialGroup);
@@ -146,15 +148,24 @@ export function GroupDetails({
       getGroupDetails(initialGroup.id)
         .then(data => {
           setGroup(data);
-          return searchGroupMembers(data.id);
+          if (data.id) {
+            setIsLoadingMembers(true);
+            setLoadingProgress("Fetching group members...");
+            return searchGroupMembers(data.id);
+          }
         })
         .then(response => {
           if (response) {
             setMembers(response.data || []);
-            setIsResultsTruncated(response.truncated || false);
+            setIsLoadingMembers(false);
+            setLoadingProgress(null);
           }
         })
-        .catch(error => console.error('Failed to fetch group details:', error));
+        .catch(error => {
+          console.error('Failed to fetch group details:', error);
+          setIsLoadingMembers(false);
+          setLoadingProgress(null);
+        });
     }
   }, [open, initialGroup?.id]);
 
@@ -257,6 +268,13 @@ export function GroupDetails({
       </div>
     );
   };
+
+  const LoadingState = () => (
+    <div className="flex flex-col items-center justify-center space-y-4 py-8">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="text-sm text-muted-foreground">{loadingProgress}</div>
+    </div>
+  );
 
   if (showMembers && onUserSelect) {
     return (
@@ -393,39 +411,47 @@ export function GroupDetails({
             <div className="flex items-center justify-between">
               <h4 className="text-sm font-semibold tracking-tight">Members</h4>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={exportMembers}
-                  className="gap-2"
-                >
-                  <Download className="h-4 w-4" />
-                  Export
-                </Button>
-                <div className="flex items-center border rounded-md">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`px-2 ${viewMode === 'grid' ? 'bg-secondary' : ''}`}
-                    onClick={() => setViewMode('grid')}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`px-2 ${viewMode === 'table' ? 'bg-secondary' : ''}`}
-                    onClick={() => setViewMode('table')}
-                  >
-                    <LayoutList className="h-4 w-4" />
-                  </Button>
-                </div>
-                <Badge variant="secondary">{members.length} total</Badge>
+                {!isLoadingMembers && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={exportMembers}
+                      className="gap-2"
+                    >
+                      <Download className="h-4 w-4" />
+                      Export
+                    </Button>
+                    <div className="flex items-center border rounded-md">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`px-2 ${viewMode === 'grid' ? 'bg-secondary' : ''}`}
+                        onClick={() => setViewMode('grid')}
+                      >
+                        <LayoutGrid className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`px-2 ${viewMode === 'table' ? 'bg-secondary' : ''}`}
+                        onClick={() => setViewMode('table')}
+                      >
+                        <LayoutList className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </>
+                )}
+                <Badge variant="secondary">
+                  {isLoadingMembers ? "Loading..." : `${members.length} total`}
+                </Badge>
               </div>
             </div>
             <Separator />
             <div className="space-y-4">
-              {members.length > 0 ? (
+              {isLoadingMembers ? (
+                <LoadingState />
+              ) : members.length > 0 ? (
                 viewMode === 'grid' ? (
                   <div className="flex flex-wrap gap-3">
                     {members.slice(0, 3).map((member) => (

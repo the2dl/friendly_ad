@@ -105,30 +105,46 @@ def format_user(entry):
         else:
             attrs = entry[1]
 
+        def safe_decode(value):
+            if isinstance(value, bytes):
+                return value.decode('utf-8')
+            return str(value)
+
+        def get_attr(attr_name, default=None):
+            values = attrs.get(attr_name, [default])
+            if not values:
+                return None
+            value = values[0] if isinstance(values, list) else values
+            return safe_decode(value) if value else None
+
+        def get_list_attr(attr_name):
+            values = attrs.get(attr_name, [])
+            return [safe_decode(v) for v in values] if values else []
+
         formatted_entry = {
             "id": entry[0],
-            "name": attrs.get('name', [b''])[0].decode('utf-8') if attrs.get('name') else None,
-            "email": attrs.get('mail', [b''])[0].decode('utf-8') if attrs.get('mail') and attrs.get('mail')[0] else None,
-            "department": attrs.get('department', [b''])[0].decode('utf-8') if attrs.get('department') and attrs.get('department')[0] else None,
-            "title": attrs.get('title', [b''])[0].decode('utf-8') if attrs.get('title') and attrs.get('title')[0] else None,
-            "phone": attrs.get('telephoneNumber', [b''])[0].decode('utf-8') if attrs.get('telephoneNumber') and attrs.get('telephoneNumber')[0] else None,
-            "manager": attrs.get('manager', [b''])[0].decode('utf-8') if attrs.get('manager') else None,
-            "street": attrs.get('streetAddress', [b''])[0].decode('utf-8') if attrs.get('streetAddress') else None,
-            "city": attrs.get('l', [b''])[0].decode('utf-8') if attrs.get('l') else None,
-            "state": attrs.get('st', [b''])[0].decode('utf-8') if attrs.get('st') else None,
-            "postalCode": attrs.get('postalCode', [b''])[0].decode('utf-8') if attrs.get('postalCode') else None,
-            "country": attrs.get('co', [b''])[0].decode('utf-8') if attrs.get('co') else None,
-            "memberOf": [group.decode('utf-8') for group in attrs.get('memberOf', [])] if attrs.get('memberOf') else [],
-            "created": attrs.get('whenCreated', [b''])[0].decode('utf-8') if attrs.get('whenCreated') else None,
-            "lastModified": attrs.get('whenChanged', [b''])[0].decode('utf-8') if attrs.get('whenChanged') else None,
-            "samAccountName": attrs.get('sAMAccountName', [b''])[0].decode('utf-8') if attrs.get('sAMAccountName') else None,
-            "userPrincipalName": attrs.get('userPrincipalName', [b''])[0].decode('utf-8') if attrs.get('userPrincipalName') else None,
-            "enabled": not bool(int(attrs.get('userAccountControl', [b'0'])[0].decode('utf-8')) & 2) if attrs.get('userAccountControl') else None,
-            "lastLogon": attrs.get('lastLogon', [b''])[0].decode('utf-8') if attrs.get('lastLogon') else None,
-            "pwdLastSet": attrs.get('pwdLastSet', [b''])[0].decode('utf-8') if attrs.get('pwdLastSet') else None,
-            "company": attrs.get('company', [b''])[0].decode('utf-8') if attrs.get('company') else None,
-            "employeeID": attrs.get('employeeID', [b''])[0].decode('utf-8') if attrs.get('employeeID') else None,
-            "employeeType": attrs.get('employeeType', [b''])[0].decode('utf-8') if attrs.get('employeeType') else None,
+            "name": get_attr('name'),
+            "email": get_attr('mail'),
+            "department": get_attr('department'),
+            "title": get_attr('title'),
+            "phone": get_attr('telephoneNumber'),
+            "manager": get_attr('manager'),
+            "street": get_attr('streetAddress'),
+            "city": get_attr('l'),
+            "state": get_attr('st'),
+            "postalCode": get_attr('postalCode'),
+            "country": get_attr('co'),
+            "memberOf": get_list_attr('memberOf'),
+            "created": get_attr('whenCreated'),
+            "lastModified": get_attr('whenChanged'),
+            "samAccountName": get_attr('sAMAccountName'),
+            "userPrincipalName": get_attr('userPrincipalName'),
+            "enabled": not bool(int(get_attr('userAccountControl', '0'))) & 2 if attrs.get('userAccountControl') else None,
+            "lastLogon": get_attr('lastLogon'),
+            "pwdLastSet": get_attr('pwdLastSet'),
+            "company": get_attr('company'),
+            "employeeID": get_attr('employeeID'),
+            "employeeType": get_attr('employeeType'),
         }
         # Convert empty strings to None
         return {k: v if v else None for k, v in formatted_entry.items()}
@@ -178,41 +194,61 @@ def format_group(entry):
         print(f"Error formatting group: {e}")
         return None
 
-def search_ldap(ldap_conn, search_filter, attributes, base_dn=None):
+def search_ldap(ldap_conn, search_filter, attributes, base_dn=None, page_size=1000):
+    """Modified to handle pagination"""
     try:
         if not ldap_conn:
             return {
                 "status": "error",
                 "results": None,
-                "error": "No LDAP connection"
+                "error": "No LDAP connection",
+                "truncated": False
             }
             
         ldap_conn.set_option(ldap.OPT_REFERRALS, 0)
-        ldap_conn.set_option(ldap.OPT_SIZELIMIT, 1000)
         
-        # Use the provided base_dn instead of environment variable
-        search_base = base_dn or LDAP_BASE_DN
+        # Initialize variables for paging
+        all_results = []
+        page_cookie = ''
+        has_more = True
         
-        results = ldap_conn.search_s(search_base, ldap.SCOPE_SUBTREE, search_filter, attributes)
+        # Set up paging control
+        lc = ldap.controls.SimplePagedResultsControl(True, size=page_size, cookie='')
+        
+        while has_more:
+            msgid = ldap_conn.search_ext(
+                base_dn,
+                ldap.SCOPE_SUBTREE,
+                search_filter,
+                attributes,
+                serverctrls=[lc]
+            )
+            
+            rtype, rdata, rmsgid, serverctrls = ldap_conn.result3(msgid)
+            all_results.extend(rdata)
+            
+            # Get cookie from page control
+            pctrls = [c for c in serverctrls if c.controlType == ldap.controls.SimplePagedResultsControl.controlType]
+            if pctrls:
+                has_more = bool(pctrls[0].cookie)
+                lc.cookie = pctrls[0].cookie
+            else:
+                has_more = False
+        
         return {
             "status": "success",
-            "results": results,
+            "results": all_results,
+            "total_count": len(all_results),
             "truncated": False
         }
-    except ldap.SIZELIMIT_EXCEEDED as e:
-        print(f"LDAP size limit exceeded: {e}")
-        partial_results = e.args[0].get('partial_results', [])
-        return {
-            "status": "truncated",
-            "results": partial_results,
-            "truncated": True
-        }
+        
     except ldap.LDAPError as e:
         print(f"LDAP Search Error: {e}")
         return {
             "status": "error",
             "results": None,
-            "error": str(e)
+            "error": str(e),
+            "truncated": False
         }
 
 def escape_ldap_filter(search_query):
@@ -341,6 +377,33 @@ def get_domains():
         cursor.execute('SELECT id, name FROM domains WHERE is_active = 1')
         domains = cursor.fetchall()
         return jsonify([{'id': d[0], 'name': d[1]} for d in domains])
+
+@app.route('/groups/<group_id>/members', methods=['GET'])
+def get_group_members(group_id):
+    """New endpoint specifically for fetching group members"""
+    connection_info = get_ldap_connection()
+    if not connection_info or not connection_info[0]:
+        return {"error": "Could not connect to LDAP server"}, 500
+
+    ldap_conn, base_dn = connection_info
+    search_filter = f"(&(objectClass=user)(memberOf={escape_ldap_filter(group_id)}))"
+    attributes = ['name', 'mail', 'department', 'title', 'telephoneNumber', 
+                 'manager', 'streetAddress', 'l', 'st', 'postalCode', 'co', 
+                 'memberOf', 'whenCreated', 'whenChanged', 'sAMAccountName', 
+                 'userPrincipalName', 'userAccountControl', 'lastLogon', 
+                 'pwdLastSet', 'company', 'employeeID', 'employeeType']
+    
+    ldap_results = search_ldap(ldap_conn, search_filter, attributes, base_dn)
+    close_ldap(ldap_conn)
+
+    if ldap_results["status"] == "success":
+        users = [format_user(entry) for entry in ldap_results["results"] if format_user(entry)]
+        return jsonify({
+            "data": users,
+            "total_count": ldap_results.get("total_count", len(users))
+        })
+    
+    return {"error": "Failed to fetch group members"}, 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001, host='0.0.0.0')
