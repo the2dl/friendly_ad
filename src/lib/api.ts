@@ -1,7 +1,7 @@
 import { User } from '@/types/user';
 import { Group } from '@/types/group';
 
-const API_BASE_URL = 'http://10.3.10.100:5001';
+const API_BASE_URL = '/api';
 
 class ApiError extends Error {
   constructor(public status?: number, message?: string) {

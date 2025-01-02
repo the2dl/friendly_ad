@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend:
+    build: 
+      context: ./ad_dump
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+    expose:
+      - "5001"
+    volumes:
+      - data:/app/data
+    environment:
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - FLASK_ENV=production
+    restart: unless-stopped
+    networks:
+      - internal
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - internal
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  data:
+    driver: local

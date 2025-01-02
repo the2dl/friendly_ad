@@ -10,26 +10,8 @@ load_dotenv()
 
 app = Flask(__name__)
 CORS(app, resources={
-    r"/search": {
-        "origins": ["http://localhost:5173"],
-        "methods": ["GET"],
-        "allow_headers": ["Content-Type"],
-        "supports_credentials": True
-    },
-    r"/groups/*": {
-        "origins": ["http://localhost:5173"],
-        "methods": ["GET"],
-        "allow_headers": ["Content-Type"],
-        "supports_credentials": True
-    },
-    r"/domains": {
-        "origins": ["http://localhost:5173"],
-        "methods": ["GET"],
-        "allow_headers": ["Content-Type"],
-        "supports_credentials": True
-    },
-    r"/admin/*": {
-        "origins": ["http://localhost:5173"],
+    r"/*": {
+        "origins": ["http://localhost", "http://127.0.0.1"],
         "methods": ["GET", "POST", "DELETE", "PUT"],
         "allow_headers": ["Content-Type", "X-Admin-Key"],
         "supports_credentials": True

@@ -1,4 +1,1 @@
-LDAP_SERVER="ldap://10.3.10.11:389"
-LDAP_USER="cn=domainuser,dc=mtx,dc=domain"
-LDAP_PASSWORD="password"
-LDAP_BASE_DN="dc=mtx,dc=domain"
+ENCRYPTION_KEY=UZEr7qxcWOqrZWZhPdX5EXOOlX2GTs-dLq2J4RQhQbY=
