@@ -25,6 +25,34 @@ Follow these instructions to set up and run Friendly AD on your local machine.
 
 You can use the docker-compose file to run the application. All you need is the env file updated with the correct API keys. From there you can go to the admin interface at `http://localhost/` and setup a admin key. Then you can add a domain. Suggest to put a load balancer in front of the application to add SSL termination & scaling.
 
+### Docker Installation
+
+1. **Clone the repository:**
+    ```bash
+    git clone https://github.com/the2dl/friendly_ad.git
+    cd friendly_ad
+    ```
+
+2. **Create a `.env` file:**
+    ```bash
+    # Generate an encryption key
+    python3 -c "from cryptography.fernet import Fernet; key = Fernet.generate_key(); print(f'ENCRYPTION_KEY={key.decode()}')" >
+    ```
+
+    See a sample at [env.sample](env.sample) - if you want to use the sample file, you can run the following command to create the file:
+    ```bash
+    cp env.sample .env
+    ```
+
+3. **Build and run with Docker Compose:**
+    ```bash
+    docker compose up -d
+    ```
+4. **Add Domain:**
+Login to the admin interface at `http://localhost/` and add a domain. Suggest to put a load balancer in front of the application to add SSL termination & scaling.
+
+The application will be available at `http://localhost`, with the API endpoints at `http://localhost/api/`.
+
 ### Prerequisites
 
 - Python 3.7 or higher
@@ -206,28 +234,3 @@ Contributions are welcome!  To contribute to Friendly AD, please follow these st
 ## License
 
 This project is licensed under the [MIT License](LICENSE). See the [LICENSE](LICENSE) file for details.
-
-### Docker Installation
-
-1. **Clone the repository:**
-    ```bash
-    git clone https://github.com/the2dl/friendly_ad.git
-    cd friendly_ad
-    ```
-
-2. **Create a `.env` file:**
-    ```bash
-    # Generate an encryption key
-    python3 -c "from cryptography.fernet import Fernet; key = Fernet.generate_key(); print(f'ENCRYPTION_KEY={key.decode()}')" >
-    ```
-
-3. **Build and run with Docker Compose:**
-    ```bash
-    docker compose up -d
-    ```
-4. **Add Domain:**
-Login to the admin interface at `http://localhost/` and add a domain. Suggest to put a load balancer in front of the application to add SSL termination & scaling.
-
-The application will be available at `http://localhost`, with the API endpoints at `http://localhost/api/`.
-
-**Note:** The data directory is persisted using a Docker volume. Make sure to secure the `.env` file as it contains sensitive information.
