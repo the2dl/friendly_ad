@@ -118,7 +118,6 @@ export function DomainManager({ adminKey, onDomainChange }: DomainManagerProps) 
     try {
       // Pass the adminKey to getDomain
       const fullDomain = await getDomain(domain.id, adminKey);
-      console.log('Full domain details:', fullDomain);
       
       if (fullDomain) {
         setEditingDomainId(fullDomain.id);

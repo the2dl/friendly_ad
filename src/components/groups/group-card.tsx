@@ -60,7 +60,7 @@ export function GroupCard({ group, onClick }: GroupCardProps) {
           {group.members && (
             <div className="flex items-center text-sm text-muted-foreground">
               <Users className="mr-2 h-4 w-4" />
-              {group.members.length} members
+              {group.members.filter(member => member && member !== 'N/A').length} members
             </div>
           )}
 

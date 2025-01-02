@@ -1,8 +1,15 @@
 import { User } from '@/types/user';
 import { Group } from '@/types/group';
 
-const API_BASE_URL = '/api';
+const isDevelopment = import.meta.env.MODE === 'development';
+const API_BASE_URL = isDevelopment ? 'http://localhost:5001' : '/api';
 const API_KEY = import.meta.env.VITE_API_KEY;
+
+if (isDevelopment) {
+  console.log('Environment:', import.meta.env.MODE);
+  console.log('API Base URL:', API_BASE_URL);
+  console.log('API Key:', API_KEY);
+}
 
 class ApiError extends Error {
   constructor(public status?: number, message?: string) {
@@ -42,11 +49,22 @@ export interface NewDomain {
 }
 
 export async function getDomains(): Promise<Domain[]> {
+  const headers = {
+    'X-API-Key': API_KEY,
+    'Content-Type': 'application/json'
+  };
+  
+  if (isDevelopment) {
+    console.log('API Key:', API_KEY);
+    console.log('Request headers:', headers);
+  }
+
   const response = await fetch(`${API_BASE_URL}/domains`, {
-    headers: {
-      'X-API-Key': API_KEY
-    }
+    method: 'GET',
+    headers,
+    credentials: 'include'
   });
+  
   if (!response.ok) {
     throw new ApiError(response.status, 'Failed to fetch domains');
   }
@@ -136,7 +154,26 @@ export async function searchGroups(
   if (!response.ok) {
     throw new Error('Failed to fetch groups');
   }
-  return response.json();
+  const data = await response.json();
+  
+  // Filter out invalid members before returning
+  if (data.data) {
+    data.data = data.data.map((group: Group) => ({
+      ...group,
+      members: (group.members || []).filter(member => {
+        // Only count entries that look like user accounts
+        // Exclude built-in security principals and system groups
+        return member &&
+               member !== 'N/A' &&
+               !member.includes('CN=S-1-') &&
+               !member.includes('CN=Domain Users,') &&
+               !member.includes('CN=System,') &&
+               !member.includes('CN=Administrator,');
+      })
+    }));
+  }
+  
+  return data;
 }
 
 export async function searchGroupMembers(groupDN: string): Promise<SearchResponse<User>> {

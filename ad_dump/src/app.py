@@ -10,14 +10,26 @@ from functools import wraps
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={
-    r"/*": {
-        "origins": ["http://localhost", "http://127.0.0.1"],
-        "methods": ["GET", "POST", "DELETE", "PUT"],
-        "allow_headers": ["Content-Type", "X-Admin-Key"],
-        "supports_credentials": True
-    }
-})
+
+# Update CORS configuration to include Vite's development server
+if os.getenv('FLASK_ENV') == 'development':
+    CORS(app, resources={
+        r"/*": {
+            "origins": ["http://localhost:5173"],  # Vite's default dev server port
+            "methods": ["GET", "POST", "DELETE", "PUT", "OPTIONS"],
+            "allow_headers": ["Content-Type", "X-Admin-Key", "X-API-Key"],
+            "supports_credentials": True
+        }
+    })
+else:
+    CORS(app, resources={
+        r"/*": {
+            "origins": ["http://localhost", "http://127.0.0.1"],
+            "methods": ["GET", "POST", "DELETE", "PUT"],
+            "allow_headers": ["Content-Type", "X-Admin-Key"],
+            "supports_credentials": True
+        }
+    })
 
 app.register_blueprint(admin_bp, url_prefix='/admin')
 
@@ -31,6 +43,11 @@ def require_api_key(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         api_key = request.headers.get('X-API-Key')
+        if os.getenv('FLASK_ENV') == 'development':
+            print(f"Received API key: {api_key}")  # Add this for debugging
+            print(f"Expected API key: {API_KEY}")  # Add this for debugging
+            print(f"Headers: {request.headers}")    # Add this for debugging
+        
         if not api_key or api_key != API_KEY:
             return jsonify({"error": "Invalid or missing API key"}), 401
         return f(*args, **kwargs)
@@ -140,8 +157,8 @@ def format_user(entry):
             "employeeID": get_attr('employeeID'),
             "employeeType": get_attr('employeeType'),
         }
-        # Convert empty strings to None
-        return {k: v if v else None for k, v in formatted_entry.items()}
+        # Only return entries that have at least a name
+        return formatted_entry if formatted_entry["name"] else None
     except Exception as e:
         print(f"Error formatting user: {e}")
         return None

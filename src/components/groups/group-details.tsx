@@ -177,7 +177,6 @@ export function GroupDetails({
   }, [open, initialGroup?.id]);
 
   const handleUserSelect = (user: User) => {
-    console.log('Handling user selection:', user.name);
     if (onUserSelect) {
       setShowMembers(false);
       onClose();
@@ -188,7 +187,6 @@ export function GroupDetails({
   };
 
   const handleMemberClick = (member: User) => {
-    console.log('Member clicked:', member.name);
     handleUserSelect(member);
   };
 
@@ -238,7 +236,6 @@ export function GroupDetails({
   if (!group) return null;
 
   const renderBreadcrumbs = () => {
-    console.log('Rendering breadcrumbs with source:', source);
     const crumbs = [];
   
     if (source?.type === 'user') {  // Add this condition
