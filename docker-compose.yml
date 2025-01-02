@@ -13,6 +13,7 @@ services:
       - data:/app/data
     environment:
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - API_KEY=${API_KEY}
       - FLASK_ENV=production
     restart: unless-stopped
     networks:

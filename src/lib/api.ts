@@ -2,6 +2,7 @@ import { User } from '@/types/user';
 import { Group } from '@/types/group';
 
 const API_BASE_URL = '/api';
+const API_KEY = import.meta.env.VITE_API_KEY;
 
 class ApiError extends Error {
   constructor(public status?: number, message?: string) {
@@ -41,7 +42,11 @@ export interface NewDomain {
 }
 
 export async function getDomains(): Promise<Domain[]> {
-  const response = await fetch(`${API_BASE_URL}/domains`);
+  const response = await fetch(`${API_BASE_URL}/domains`, {
+    headers: {
+      'X-API-Key': API_KEY
+    }
+  });
   if (!response.ok) {
     throw new ApiError(response.status, 'Failed to fetch domains');
   }
@@ -90,7 +95,11 @@ export async function searchUsers(
       params.set('domain_id', domainId.toString());
     }
 
-    const response = await fetch(`${API_BASE_URL}/search?${params.toString()}`);
+    const response = await fetch(`${API_BASE_URL}/search?${params.toString()}`, {
+      headers: {
+        'X-API-Key': API_KEY
+      }
+    });
     
     if (!response.ok) {
       throw new ApiError(response.status, 'Failed to fetch users');
@@ -119,7 +128,11 @@ export async function searchGroups(
     params.set('domain_id', domainId.toString());
   }
 
-  const response = await fetch(`${API_BASE_URL}/search?${params}`);
+  const response = await fetch(`${API_BASE_URL}/search?${params}`, {
+    headers: {
+      'X-API-Key': API_KEY
+    }
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch groups');
   }
@@ -128,7 +141,11 @@ export async function searchGroups(
 
 export async function searchGroupMembers(groupDN: string): Promise<SearchResponse<User>> {
   try {
-    const response = await fetch(`${API_BASE_URL}/groups/${encodeURIComponent(groupDN)}/members`);
+    const response = await fetch(`${API_BASE_URL}/groups/${encodeURIComponent(groupDN)}/members`, {
+      headers: {
+        'X-API-Key': API_KEY
+      }
+    });
     if (!response.ok) {
       throw new ApiError(response.status, 'Failed to fetch group members');
     }
@@ -148,7 +165,11 @@ export async function searchGroupMembers(groupDN: string): Promise<SearchRespons
 
 export async function getGroupDetails(groupId: string): Promise<Group> {
   try {
-    const response = await fetch(`${API_BASE_URL}/groups/${encodeURIComponent(groupId)}`);
+    const response = await fetch(`${API_BASE_URL}/groups/${encodeURIComponent(groupId)}`, {
+      headers: {
+        'X-API-Key': API_KEY
+      }
+    });
     if (!response.ok) {
       throw new ApiError(response.status, 'Failed to fetch group details');
     }
@@ -163,7 +184,11 @@ export async function getGroupDetails(groupId: string): Promise<Group> {
 }
 
 export async function checkSetupStatus(): Promise<boolean> {
-  const response = await fetch(`${API_BASE_URL}/admin/setup-status`);
+  const response = await fetch(`${API_BASE_URL}/admin/setup-status`, {
+    headers: {
+      'X-API-Key': API_KEY
+    }
+  });
   if (!response.ok) {
     throw new ApiError(response.status, 'Failed to check setup status');
   }

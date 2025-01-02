@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from .admin_routes import admin_bp
 from .database import get_db, decrypt_password, init_db
+from functools import wraps
 
 load_dotenv()
 
@@ -24,8 +25,19 @@ LDAP_SERVER = os.getenv("LDAP_SERVER")
 LDAP_USER = os.getenv("LDAP_USER")
 LDAP_PASSWORD = os.getenv("LDAP_PASSWORD")
 LDAP_BASE_DN = os.getenv("LDAP_BASE_DN")
+API_KEY = os.getenv("API_KEY")
+
+def require_api_key(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        api_key = request.headers.get('X-API-Key')
+        if not api_key or api_key != API_KEY:
+            return jsonify({"error": "Invalid or missing API key"}), 401
+        return f(*args, **kwargs)
+    return decorated_function
 
 @app.route('/search', methods=['GET'])
+@require_api_key
 def search():
     search_query = request.args.get('query', '')
     search_type = request.args.get('type', '')
@@ -333,6 +345,7 @@ def teardown_ldap(exception):
     pass
 
 @app.route('/groups/<group_id>', methods=['GET'])
+@require_api_key
 def get_group_details(group_id):
     connection_info = get_ldap_connection()
     if not connection_info or not connection_info[0]:
@@ -353,6 +366,7 @@ def get_group_details(group_id):
     return {"error": "Group not found"}, 404
 
 @app.route('/domains', methods=['GET'])
+@require_api_key
 def get_domains():
     with get_db() as db:
         cursor = db.cursor()
@@ -361,6 +375,7 @@ def get_domains():
         return jsonify([{'id': d[0], 'name': d[1]} for d in domains])
 
 @app.route('/groups/<group_id>/members', methods=['GET'])
+@require_api_key
 def get_group_members(group_id):
     """New endpoint specifically for fetching group members"""
     connection_info = get_ldap_connection()

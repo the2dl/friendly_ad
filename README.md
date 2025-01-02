@@ -55,13 +55,27 @@ Follow these instructions to set up and run AD Dump on your local machine.
 
 5. **Create a `.env` file:**
 
-    Create a `.env` file in the root directory of the project and add the following line, replacing `your_generated_key` with the key you generated in the previous step:
+    Create a `.env` file in the root directory of the project and add the following:
 
     ```env
+    # Key for encrypting sensitive data in the database
     ENCRYPTION_KEY=your_generated_key
+    
+    # API key for securing endpoints (generate a secure random key)
+    VITE_API_KEY=your_api_key
+    API_KEY=${VITE_API_KEY}
     ```
 
-    **Important:** Store the `.env` file securely and never commit it to version control.
+    You can generate a secure random API key using:
+    ```python
+    import secrets
+    print(f"VITE_API_KEY={secrets.token_hex(32)}")
+    ```
+
+    **Important:** 
+    - Store the `.env` file securely and never commit it to version control
+    - The API key is used by both frontend and backend to secure API endpoints
+    - Keep these keys safe as they protect sensitive data and API access
 
 6. **Initialize the database:**
 
@@ -152,9 +166,10 @@ These endpoints require the `X-Admin-Key` header to be set with the admin key co
 ## Security Notes
 
 1. **Encryption Key:** The `ENCRYPTION_KEY` is crucial for securing sensitive data in the SQLite database. Keep it safe and do not share it.
-2. **`.env` File:**  Never commit the `.env` file to version control. Treat it like any other sensitive credential.
-3. **Admin Key:** The admin key provides access to sensitive administrative operations. Choose a strong, unique admin key and store it securely.
-4. **Data Encryption:**  All passwords and other sensitive data are encrypted at rest in the database using Fernet encryption.
+2. **API Key:** The `VITE_API_KEY` secures all API endpoints. Choose a strong, random key and protect it like any other credential.
+3. **`.env` File:** Never commit the `.env` file to version control. Treat it like any other sensitive credential.
+4. **Admin Key:** The admin key provides access to sensitive administrative operations. Choose a strong, unique admin key and store it securely.
+5. **Data Encryption:** All passwords and other sensitive data are encrypted at rest in the database using Fernet encryption.
 
 ## Development
 
@@ -208,7 +223,7 @@ This project is licensed under the [MIT License](LICENSE). See the [LICENSE](LIC
 2. **Create a `.env` file:**
     ```bash
     # Generate an encryption key
-    python3 -c "from cryptography.fernet import Fernet; key = Fernet.generate_key(); print(f'ENCRYPTION_KEY={key.decode()}')" > .env
+    python3 -c "from cryptography.fernet import Fernet; key = Fernet.generate_key(); print(f'ENCRYPTION_KEY={key.decode()}')" >
     ```
 
 3. **Build and run with Docker Compose:**
