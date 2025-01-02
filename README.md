@@ -1,6 +1,13 @@
 # Friendly AD
 
-A Flask-based API for securely querying Active Directory domains. Supports multiple domains, encrypted credential storage, and flexible search capabilities.
+A Flask-based API for securely querying Active Directory domains with a VITE/React frontend utilizing shadcn/ui. Supports multiple domains, encrypted credential storage, and flexible search capabilities.
+
+## Screenshots
+
+![users](screenshots/users.png)
+
+
+![groups](screenshots/groups.png)
 
 ## Features
 
