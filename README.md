@@ -1,4 +1,4 @@
-# AD Dump
+# Friendly AD
 
 A Flask-based API for securely querying Active Directory domains. Supports multiple domains, encrypted credential storage, and flexible search capabilities.
 
@@ -12,7 +12,11 @@ A Flask-based API for securely querying Active Directory domains. Supports multi
 
 ## Getting Started
 
-Follow these instructions to set up and run AD Dump on your local machine.
+Follow these instructions to set up and run Friendly AD on your local machine.
+
+# IMPORTANT
+
+You can use the docker-compose file to run the application. All you need is the env file updated with the correct API keys. From there you can go to the admin interface at `http://localhost/` and setup a admin key. Then you can add a domain. Suggest to put a load balancer in front of the application to add SSL termination & scaling.
 
 ### Prerequisites
 
@@ -25,7 +29,7 @@ Follow these instructions to set up and run AD Dump on your local machine.
 
     ```bash
     git clone https://github.com/the2dl/friendly_ad.git
-    cd ad-dump
+    cd friendly_ad
     ```
 
 2. **Create and activate a virtual environment:**
@@ -76,22 +80,6 @@ Follow these instructions to set up and run AD Dump on your local machine.
     - Store the `.env` file securely and never commit it to version control
     - The API key is used by both frontend and backend to secure API endpoints
     - Keep these keys safe as they protect sensitive data and API access
-
-6. **Initialize the database:**
-
-    ```bash
-    python -m ad_dump.src.database init_db
-    ```
-
-7. **Set up the admin key:**
-
-    The admin key is required to access administrative API endpoints. Set it up using the following command, replacing `your_admin_key` with a secure key of your choice:
-
-    ```bash
-    curl -X POST http://localhost:5001/admin/setup \
-    -H "Content-Type: application/json" \
-    -d '{"adminKey": "your_admin_key"}'
-    ```
 
 ### Adding Domains
 
@@ -200,7 +188,7 @@ sqlite3 ad_config.db
 
 ## Contributing
 
-Contributions are welcome!  To contribute to AD Dump, please follow these steps:
+Contributions are welcome!  To contribute to Friendly AD, please follow these steps:
 
 1. Fork the repository.
 2. Create a new branch for your feature or bug fix (`git checkout -b feature/your-feature-name`).
