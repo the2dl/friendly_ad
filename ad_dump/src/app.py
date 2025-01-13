@@ -15,7 +15,7 @@ app = Flask(__name__)
 if os.getenv('FLASK_ENV') == 'development':
     CORS(app, resources={
         r"/*": {
-            "origins": ["http://localhost:5173"],  # Vite's default dev server port
+            "origins": ["http://localhost:4500"],  # Changed from 5173 to 4500
             "methods": ["GET", "POST", "DELETE", "PUT", "OPTIONS"],
             "allow_headers": ["Content-Type", "X-Admin-Key", "X-API-Key"],
             "supports_credentials": True
