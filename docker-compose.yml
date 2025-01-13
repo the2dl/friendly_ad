@@ -8,13 +8,14 @@ services:
       platforms:
         - linux/amd64
     expose:
-      - "5001"
+      - "4501"
     volumes:
       - data:/app/data
     environment:
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - API_KEY=${API_KEY}
       - FLASK_ENV=production
+      - BACKEND_PORT=4501
     restart: unless-stopped
     networks:
       - internal
